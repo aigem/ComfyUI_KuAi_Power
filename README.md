@@ -4,6 +4,10 @@ ComfyUI 节点扩展，提供对 Sora2 和 Veo 视频生成模型以及 AI 脚�
 
 > **API 服务**: [kuai.host](https://api.kuai.host/register?aff=z2C8) | **国内镜像**: [v.kuai.host](https://v.kuai.host/) | **视频教程**: [Bilibili](https://www.bilibili.com/video/BV1umCjBqEpt/)
 
+> 可配合[本地一键包「CNB钞能力一键包-free」来使用](https://pan.quark.cn/s/987bd66a6197)
+
+`https://pan.quark.cn/s/987bd66a6197 提取码：AJFP`
+
 ## 🚀 快速开始
 
 ### 1. 安装依赖
