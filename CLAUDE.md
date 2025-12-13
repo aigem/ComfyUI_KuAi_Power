@@ -189,7 +189,7 @@ class Settings(BaseSettings):
 基于 Google Gemini 模型的多模态图像生成节点，支持文生图、图生图、多轮对话等高级功能。
 
 ##### NanoBananaAIO
-**功能**: Nano Banana 多功能节点 - 统一的多模态图像生成接口
+**功能**: Nano Banana Pro 多功能节点 - 统一的多模态图像生成接口
 **输入参数**:
 - `model_name` (ENUM): `gemini-3-pro-image-preview` | `gemini-2.0-flash-exp`
 - `prompt` (STRING): 图像生成提示词

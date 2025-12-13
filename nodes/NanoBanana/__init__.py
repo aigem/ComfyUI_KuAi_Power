@@ -8,6 +8,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "NanoBananaAIO": "🍌 Nano Banana 多功能",
+    "NanoBananaAIO": "🍌 Nano Banana Pro 多功能",
     "NanoBananaMultiTurnChat": "🍌 Nano Banana 多轮对话"
 }

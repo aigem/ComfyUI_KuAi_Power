@@ -32,14 +32,14 @@ def base64_to_pil(base64_str: str) -> Image.Image:
 
 
 class NanoBananaAIO:
-    """Nano Banana 多功能节点：支持单/多图生成、grounding、搜索和 thinking 能力"""
+    """Nano Banana Pro 多功能节点：支持单/多图生成、grounding、搜索和 thinking 能力"""
 
     def __init__(self):
         self._preview_warning_shown = False
 
     @classmethod
     def INPUT_TYPES(cls):
-        model_list = ["gemini-3-pro-image-preview", "gemini-2.0-flash-exp"]
+        model_list = ["gemini-3-pro-image-preview", "gemini-2.5-flash-image"]
         return {
             "required": {
                 "model_name": (model_list, {"default": model_list[0], "tooltip": "选择 Gemini 模型"}),
@@ -56,11 +56,11 @@ class NanoBananaAIO:
                 "image_6": ("IMAGE", {"tooltip": "参考图6"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
-                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸"}),
+                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对香蕉2起作用"}),
                 "temperature": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "生成温度"}),
                 "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API 端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API 密钥"}),
-                "timeout": ("INT", {"default": 120, "min": 5, "max": 600, "tooltip": "超时时间(秒)"}),
+                "timeout": ("INT", {"default": 180, "min": 60, "max": 900, "tooltip": "超时时间(秒)"}),
             }
         }
 
