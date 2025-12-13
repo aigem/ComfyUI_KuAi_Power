@@ -21,13 +21,12 @@ class CSVBatchReader:
         return {
             "required": {},
             "optional": {
-                "upload": ("IMAGEUPLOAD", {"tooltip": "点击上传 CSV 文件（上传后需刷新节点）"}),
-                "csv_path": ("STRING", {"default": "", "multiline": False, "tooltip": "直接输入 CSV 文件的完整路径"}),
+                "csv_path": ("STRING", {"default": "", "multiline": False, "tooltip": "输入 CSV 文件路径（支持绝对路径或相对于 input 目录的文件名）"}),
             }
         }
 
     @classmethod
-    def VALIDATE_INPUTS(cls, csv_path="", upload=None):
+    def VALIDATE_INPUTS(cls, csv_path=""):
         """验证输入参数 - 在节点创建时允许空值"""
         # 允许节点创建，在执行时再检查
         return True
@@ -40,12 +39,11 @@ class CSVBatchReader:
     @classmethod
     def INPUT_LABELS(cls):
         return {
-            "upload": "上传文件",
             "csv_path": "文件路径",
         }
 
     @classmethod
-    def IS_CHANGED(cls, csv_path="", upload=None):
+    def IS_CHANGED(cls, csv_path=""):
         """检测输入是否改变"""
         # 检查文件路径
         if csv_path and csv_path.strip():
@@ -55,12 +53,11 @@ class CSVBatchReader:
 
         return float("nan")
 
-    def read_csv(self, upload=None, csv_path=""):
+    def read_csv(self, csv_path=""):
         """读取 CSV 文件并返回 JSON 格式的任务列表
 
         Args:
-            upload: 文件上传 widget（上传后文件会保存到 input 目录）
-            csv_path: 直接输入的文件路径（支持绝对路径或相对于 input 目录的路径）
+            csv_path: CSV 文件路径（支持绝对路径或相对于 input 目录的文件名）
         """
         try:
             # 检查是否提供了文件路径
@@ -68,9 +65,9 @@ class CSVBatchReader:
                 raise ValueError(
                     "请输入 CSV 文件路径。\n\n"
                     "使用方法：\n"
-                    "1. 点击 'upload' 上传文件到 ComfyUI/input/ 目录\n"
-                    "2. 在 'csv_path' 中输入文件名（如 'myfile.csv'）或完整路径\n"
-                    "3. 如果文件在 input 目录，只需输入文件名即可"
+                    "1. 将 CSV 文件复制到 ComfyUI/input/ 目录\n"
+                    "2. 在 'csv_path' 中输入文件名（如 'myfile.csv'）\n"
+                    "3. 或输入完整路径（如 '/path/to/file.csv'）"
                 )
 
             file_path = csv_path.strip()
