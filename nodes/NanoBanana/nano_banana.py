@@ -4,6 +4,7 @@ import io
 import json
 import time
 import base64
+import random
 import torch
 import numpy as np
 import requests
@@ -46,8 +47,10 @@ class NanoBananaAIO:
                 "prompt": ("STRING", {"multiline": True, "default": "A futuristic nano banana dish", "tooltip": "图像生成提示词"}),
                 "image_count": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1, "tooltip": "生成图像数量"}),
                 "use_search": ("BOOLEAN", {"default": True, "tooltip": "启用网络搜索增强"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "随机种子值，0为随机"}),
             },
             "optional": {
+                "system_prompt": ("STRING", {"multiline": True, "default": "", "tooltip": "系统提示词，用于指导 AI 的行为和风格"}),
                 "image_1": ("IMAGE", {"tooltip": "参考图1"}),
                 "image_2": ("IMAGE", {"tooltip": "参考图2"}),
                 "image_3": ("IMAGE", {"tooltip": "参考图3"}),
@@ -56,7 +59,7 @@ class NanoBananaAIO:
                 "image_6": ("IMAGE", {"tooltip": "参考图6"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
-                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对香蕉2起作用"}),
+                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对gemini-3-pro-image-preview起作用"}),
                 "temperature": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "生成温度"}),
                 "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API 端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API 密钥"}),
@@ -76,6 +79,8 @@ class NanoBananaAIO:
             "prompt": "提示词",
             "image_count": "图像数量",
             "use_search": "启用搜索",
+            "seed": "种子值",
+            "system_prompt": "系统提示词",
             "image_1": "参考图1",
             "image_2": "参考图2",
             "image_3": "参考图3",
@@ -95,8 +100,8 @@ class NanoBananaAIO:
         print(f"\033[91m[NanoBanana] 错误: {message}\033[0m")
         return (torch.zeros(1, 64, 64, 3), "", "")
 
-    def generate_unified(self, model_name, prompt, image_count=1, use_search=True,
-                        image_1=None, image_2=None, image_3=None, image_4=None, image_5=None, image_6=None,
+    def generate_unified(self, model_name, prompt, image_count=1, use_search=True, seed=0,
+                        system_prompt="", image_1=None, image_2=None, image_3=None, image_4=None, image_5=None, image_6=None,
                         aspect_ratio="1:1", image_size="2K", temperature=1.0,
                         api_base="https://api.kuai.host", api_key="", timeout=120):
         """统一生成接口"""
@@ -113,6 +118,14 @@ class NanoBananaAIO:
             if not api_key:
                 return self._handle_error("未配置 API Key，请设置 KUAI_API_KEY 环境变量或在节点中填写")
 
+            # 处理种子值：0表示随机
+            if seed == 0:
+                actual_seed = random.randint(1, 0xffffffffffffffff)
+                print(f"[NanoBanana] 使用随机种子: {actual_seed}")
+            else:
+                actual_seed = seed
+                print(f"[NanoBanana] 使用固定种子: {actual_seed}")
+
             # 准备参考图像（转换为 base64）
             reference_images_base64 = []
             for img_tensor in [image_1, image_2, image_3, image_4, image_5, image_6]:
@@ -127,20 +140,20 @@ class NanoBananaAIO:
             # 根据图像数量选择生成方式
             if image_count == 1:
                 return self._generate_single_image(
-                    api_base, api_key, model_name, prompt, reference_images_base64,
-                    aspect_ratio, image_size, temperature, use_search, timeout
+                    api_base, api_key, model_name, prompt, system_prompt, reference_images_base64,
+                    aspect_ratio, image_size, temperature, use_search, actual_seed, timeout
                 )
             else:
                 return self._generate_multiple_images(
-                    api_base, api_key, model_name, prompt, image_count, reference_images_base64,
-                    aspect_ratio, image_size, temperature, use_search, timeout
+                    api_base, api_key, model_name, prompt, system_prompt, image_count, reference_images_base64,
+                    aspect_ratio, image_size, temperature, use_search, actual_seed, timeout
                 )
 
         except Exception as e:
             return self._handle_error(f"生成失败: {str(e)}")
 
-    def _generate_single_image(self, api_base, api_key, model_name, prompt, reference_images_base64,
-                               aspect_ratio, image_size, temperature, use_search, timeout):
+    def _generate_single_image(self, api_base, api_key, model_name, prompt, system_prompt, reference_images_base64,
+                               aspect_ratio, image_size, temperature, use_search, seed, timeout):
         """生成单张图像"""
         # 使用 Google Gemini API 格式: /v1beta/models/{model}:generateContent
         endpoint = api_base.rstrip("/") + f"/v1beta/models/{model_name}:generateContent"
@@ -163,24 +176,38 @@ class NanoBananaAIO:
         # 构建 generation_config
         generation_config = {
             "temperature": float(temperature),
-            "response_modalities": ["TEXT", "IMAGE"]
-        }
-
-        # 构建 image_config
-        image_config = {
-            "aspect_ratio": aspect_ratio,
-            "image_size": image_size
+            "response_modalities": ["TEXT", "IMAGE"],
+            "seed": int(seed)
         }
 
         # 构建请求 payload（Gemini API 格式）
         payload = {
             "contents": [{"parts": contents}],
-            "generationConfig": generation_config,
-            "imageConfig": image_config
+            "generationConfig": generation_config
         }
 
-        # 如果启用搜索，添加 tools
-        if use_search:
+        # 添加系统提示词（如果提供）
+        if system_prompt and system_prompt.strip():
+            payload["systemInstruction"] = {
+                "parts": [{"text": system_prompt.strip()}]
+            }
+
+        # 根据模型类型添加不同的配置
+        if model_name == "gemini-3-pro-image-preview":
+            # gemini-3-pro-image-preview 支持 imageConfig
+            payload["imageConfig"] = {
+                "aspect_ratio": aspect_ratio,
+                "image_size": image_size
+            }
+        elif model_name == "gemini-2.5-flash-image":
+            # gemini-2.5-flash-image 使用不同的配置方式
+            # 将 aspect_ratio 添加到 generation_config 中
+            generation_config["aspect_ratio"] = aspect_ratio
+            # gemini-2.5-flash-image 不支持 image_size 参数
+            payload["generationConfig"] = generation_config
+
+        # 如果启用搜索，添加 tools（仅 gemini-3-pro-image-preview 支持）
+        if use_search and model_name == "gemini-3-pro-image-preview":
             payload["tools"] = [{"googleSearch": {}}]
 
         try:
@@ -240,20 +267,21 @@ class NanoBananaAIO:
 
         return (image_tensor, thinking, grounding_sources)
 
-    def _generate_multiple_images(self, api_base, api_key, model_name, prompt, image_count, reference_images_base64,
-                                  aspect_ratio, image_size, temperature, use_search, timeout):
+    def _generate_multiple_images(self, api_base, api_key, model_name, prompt, system_prompt, image_count, reference_images_base64,
+                                  aspect_ratio, image_size, temperature, use_search, seed, timeout):
         """生成多张图像"""
         generated_images = []
         all_thinking = []
         all_grounding = []
 
         for i in range(image_count):
-            # 为每张图像添加序号
+            # 为每张图像添加序号和不同的种子值
             current_prompt = f"{prompt} (Image {i+1} of {image_count})"
+            current_seed = seed + i  # 每张图像使用不同的种子值
 
             image_tensor, thinking, grounding = self._generate_single_image(
-                api_base, api_key, model_name, current_prompt, reference_images_base64,
-                aspect_ratio, image_size, temperature, use_search, timeout
+                api_base, api_key, model_name, current_prompt, system_prompt, reference_images_base64,
+                aspect_ratio, image_size, temperature, use_search, current_seed, timeout
             )
 
             # 检查是否生成成功
@@ -314,18 +342,20 @@ class NanoBananaMultiTurnChat:
 
     @classmethod
     def INPUT_TYPES(cls):
-        model_list = ["gemini-3-pro-image-preview", "gemini-2.0-flash-exp"]
+        model_list = ["gemini-3-pro-image-preview", "gemini-2.5-flash-image"]
         return {
             "required": {
                 "model_name": (model_list, {"default": model_list[0], "tooltip": "选择 Gemini 模型"}),
                 "prompt": ("STRING", {"multiline": True, "default": "Create an image of a clear perfume bottle sitting on a vanity.", "tooltip": "对话提示词"}),
                 "reset_chat": ("BOOLEAN", {"default": False, "tooltip": "重置对话历史"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "随机种子值，0为随机"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
-                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸"}),
+                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对gemini-3-pro-image-preview起作用"}),
                 "temperature": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "生成温度"}),
             },
             "optional": {
+                "system_prompt": ("STRING", {"multiline": True, "default": "", "tooltip": "系统提示词，用于指导 AI 的行为和风格"}),
                 "image_input": ("IMAGE", {"tooltip": "初始参考图像"}),
                 "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API 端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API 密钥"}),
@@ -344,9 +374,11 @@ class NanoBananaMultiTurnChat:
             "model_name": "模型",
             "prompt": "提示词",
             "reset_chat": "重置对话",
+            "seed": "种子值",
             "aspect_ratio": "宽高比",
             "image_size": "尺寸",
             "temperature": "温度",
+            "system_prompt": "系统提示词",
             "image_input": "参考图",
             "api_base": "API地址",
             "api_key": "API密钥",
@@ -358,9 +390,9 @@ class NanoBananaMultiTurnChat:
         print(f"\033[91m[NanoBanana] 错误: {message}\033[0m")
         return (torch.zeros(1, 64, 64, 3), "", "", "")
 
-    def generate_multiturn_image(self, model_name, prompt, reset_chat=False,
+    def generate_multiturn_image(self, model_name, prompt, reset_chat=False, seed=0,
                                 aspect_ratio="1:1", image_size="2K", temperature=1.0,
-                                image_input=None, api_base="https://api.kuai.host",
+                                system_prompt="", image_input=None, api_base="https://api.kuai.host",
                                 api_key="", timeout=120):
         """多轮对话图像生成"""
         try:
@@ -378,6 +410,14 @@ class NanoBananaMultiTurnChat:
             api_key = env_or(api_key, "KUAI_API_KEY")
             if not api_key:
                 return self._handle_error("未配置 API Key")
+
+            # 处理种子值：0表示随机
+            if seed == 0:
+                actual_seed = random.randint(1, 0xffffffffffffffff)
+                print(f"[NanoBanana] 使用随机种子: {actual_seed}")
+            else:
+                actual_seed = seed
+                print(f"[NanoBanana] 使用固定种子: {actual_seed}")
 
             # 使用 Gemini Chat API 格式
             endpoint = api_base.rstrip("/") + f"/v1beta/models/{model_name}:streamGenerateContent"
@@ -430,17 +470,34 @@ class NanoBananaMultiTurnChat:
             contents.append({"role": "user", "parts": current_parts})
 
             # 构建请求 payload
+            generation_config = {
+                "temperature": float(temperature),
+                "response_modalities": ["TEXT", "IMAGE"],
+                "seed": int(actual_seed)
+            }
+
             payload = {
                 "contents": contents,
-                "generationConfig": {
-                    "temperature": float(temperature),
-                    "response_modalities": ["TEXT", "IMAGE"]
-                },
-                "imageConfig": {
+                "generationConfig": generation_config
+            }
+
+            # 添加系统提示词（如果提供）
+            if system_prompt and system_prompt.strip():
+                payload["systemInstruction"] = {
+                    "parts": [{"text": system_prompt.strip()}]
+                }
+
+            # 根据模型类型添加不同的配置
+            if model_name == "gemini-3-pro-image-preview":
+                # gemini-3-pro-image-preview 支持 imageConfig
+                payload["imageConfig"] = {
                     "aspect_ratio": aspect_ratio,
                     "image_size": image_size
                 }
-            }
+            elif model_name == "gemini-2.5-flash-image":
+                # gemini-2.5-flash-image 使用不同的配置方式
+                generation_config["aspect_ratio"] = aspect_ratio
+                payload["generationConfig"] = generation_config
 
             try:
                 resp = requests.post(

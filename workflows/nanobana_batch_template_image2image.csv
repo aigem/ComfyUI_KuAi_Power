@@ -1,0 +1,4 @@
+task_type,prompt,system_prompt,model_name,seed,aspect_ratio,image_size,temperature,use_search,image_1,image_2,image_3,image_4,image_5,image_6,output_prefix
+edit,Make the colors more vibrant and add more details,Enhance image quality and colors,gemini-3-pro-image-preview,0,1:1,2K,0.8,false,/path/to/your/image1.jpg,,,,,vibrant_001
+edit,Transform this into a cyberpunk style,Apply cyberpunk aesthetic with neon lights,gemini-2.5-flash-image,0,16:9,2K,1.0,false,/path/to/your/image2.jpg,/path/to/your/reference.jpg,,,,cyberpunk_001
+edit,Add dramatic lighting and shadows,Professional photography lighting,gemini-3-pro-image-preview,0,1:1,2K,0.9,false,/path/to/your/image3.jpg,,,,,dramatic_001

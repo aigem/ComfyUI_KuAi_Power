@@ -60,12 +60,13 @@ pip install -r requirements.txt
 | **🤖 AI 生成提示词** | 根据产品信息，调用 AI 生成专业级的 Sora 提示词。 |
 
 ### 🍌 Nano Banana 图像生成 (`KuAi/NanoBanana`)
-基于 Google Gemini 模型的多模态图像生成，支持文生图、图生图和多轮对话。
+基于 Google Gemini 模型的多模态图像生成，支持文生图、图生图、多轮对话和批量处理。
 
 | 节点名称 | 功能简介 |
 | :--- | :--- |
-| **🍌 Nano Banana Pro 多功能** | 统一的多模态图像生成接口，支持单/多图生成、参考图、搜索增强。 |
-| **🍌 Nano Banana 多轮对话** | 支持基于对话历史的迭代图像生成和编辑。 |
+| **🍌 Nano Banana Pro 多功能** | 统一的多模态图像生成接口，支持单/多图生成、参考图、搜索增强、系统提示词。 |
+| **🍌 Nano Banana 多轮对话** | 支持基于对话历史的迭代图像生成和编辑，支持系统提示词。 |
+| **📦 NanoBanana 批量处理器** | 通过 CSV 文件批量生成或编辑图像，自动保存结果和元数据。 |
 
 ### 🛠️ 其他工具
 
@@ -73,6 +74,7 @@ pip install -r requirements.txt
 | :--- | :--- | :--- |
 | **UploadToImageHost** | `KuAi/Utils` | 将本地图片上传到图床并返回 URL。 |
 | **DeepseekOCRToPrompt**| `KuAi/Utils` | 提取图片中的文本内容。 |
+| **CSV 批量读取器** | `KuAi/Utils` | 读取 CSV 文件并解析为批量任务数据。 |
 
 ---
 
@@ -97,6 +99,20 @@ NanoBananaAIO → (输入提示词和参数) → (获取图像 + 思考过程 + 
 ```
 NanoBananaMultiTurnChat → "Create a perfume bottle" → "Make it elegant" → "Add flowers"
 ```
+
+### 示例 5: 批量图像生成
+```
+CSVBatchReader (读取 CSV 文件) → NanoBananaBatchProcessor (批量处理) → (自动保存图像和元数据)
+```
+
+**CSV 模板下载**:
+- [空白模板](./workflows/nanobana_batch_template_blank.csv)
+- [文生图模板](./workflows/nanobana_batch_template_text2image.csv)
+- [图生图模板](./workflows/nanobana_batch_template_image2image.csv)
+- [中文模板](./workflows/nanobana_batch_template_chinese.csv)
+- [模板使用说明](./workflows/CSV_TEMPLATES_README.md)
+
+**详细指南**: [NanoBanana 批量处理使用指南](./NANOBANA_BATCH_GUIDE.md)
 
 ---
 

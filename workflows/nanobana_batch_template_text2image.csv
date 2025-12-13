@@ -1,0 +1,4 @@
+task_type,prompt,system_prompt,model_name,seed,aspect_ratio,image_size,temperature,use_search,image_1,image_2,image_3,image_4,image_5,image_6,output_prefix
+generate,A futuristic city with flying cars,You are a creative sci-fi artist,gemini-3-pro-image-preview,0,16:9,2K,1.0,true,,,,,,,city_001
+generate,A serene mountain landscape at sunset,Create beautiful natural scenes,gemini-2.5-flash-image,0,1:1,2K,0.9,false,,,,,,,mountain_001
+generate,A professional product photo of a luxury watch,You are a professional product photographer,gemini-3-pro-image-preview,0,1:1,2K,1.0,false,,,,,,,watch_001

@@ -1,0 +1,6 @@
+task_type,prompt,system_prompt,model_name,seed,aspect_ratio,image_size,temperature,use_search,image_1,image_2,image_3,image_4,image_5,image_6,output_prefix
+生图,一个未来感十足的科幻城市,你是一个专业的科幻概念设计师,gemini-3-pro-image-preview,0,16:9,2K,1.0,true,,,,,,,scifi_city_001
+生图,一个宁静的山水风景画,你是一个中国传统山水画大师,gemini-2.5-flash-image,0,1:1,2K,0.9,false,,,,,,,landscape_001
+生图,一个高端奢侈品手表的产品摄影,你是一个专业的产品摄影师,gemini-3-pro-image-preview,0,1:1,2K,1.0,false,,,,,,,watch_001
+改图,让这张图片的色彩更加鲜艳明亮,增强图片的色彩饱和度和亮度,gemini-3-pro-image-preview,0,1:1,2K,0.8,false,/path/to/your/image1.jpg,,,,,vibrant_001
+改图,将这张图片转换成赛博朋克风格,应用赛博朋克美学风格,gemini-2.5-flash-image,0,16:9,2K,1.0,false,/path/to/your/image2.jpg,,,,,cyberpunk_001

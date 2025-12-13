@@ -1,0 +1,7 @@
+task_type,prompt,system_prompt,model_name,seed,aspect_ratio,image_size,temperature,use_search,image_1,image_2,image_3,image_4,image_5,image_6,output_prefix
+generate,A futuristic city with flying cars,You are a creative sci-fi artist,gemini-3-pro-image-preview,42,16:9,2K,1.0,true,,,,,,,city_001
+generate,A serene mountain landscape at sunset,Create beautiful natural scenes,gemini-2.5-flash-image,100,1:1,2K,0.9,false,,,,,,,mountain_001
+edit,Make the colors more vibrant and add more details,Enhance image quality,gemini-3-pro-image-preview,200,1:1,2K,0.8,false,/path/to/image1.jpg,,,,,vibrant_001
+edit,Transform this into a cyberpunk style,Apply cyberpunk aesthetic,gemini-2.5-flash-image,300,16:9,2K,1.2,false,/path/to/image2.jpg,/path/to/image3.jpg,,,,cyberpunk_001
+生图,一个未来感十足的机器人,你是一个专业的概念设计师,gemini-3-pro-image-preview,0,1:1,4K,1.0,true,,,,,,,robot_001
+改图,让这张图片更加明亮和温暖,增强图片的温暖感,gemini-2.5-flash-image,500,9:16,2K,0.7,false,/path/to/image4.jpg,,,,,warm_001
