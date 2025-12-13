@@ -18,15 +18,26 @@ class CSVBatchReader:
 
     @classmethod
     def INPUT_TYPES(cls):
+        # 获取 input 目录中的 CSV 文件列表
+        csv_files = []
+        if HAS_FOLDER_PATHS:
+            try:
+                input_dir = folder_paths.get_input_directory()
+                if os.path.exists(input_dir):
+                    csv_files = sorted([f for f in os.listdir(input_dir) if f.lower().endswith('.csv')])
+            except Exception as e:
+                print(f"[CSVBatchReader] 无法读取 input 目录: {e}")
+
         return {
             "required": {},
             "optional": {
-                "csv_path": ("STRING", {"default": "", "multiline": False, "tooltip": "输入 CSV 文件路径（支持绝对路径或相对于 input 目录的文件名）"}),
+                "csv_file": (csv_files if csv_files else [""], {"tooltip": "从 input 目录选择 CSV 文件"}),
+                "csv_path": ("STRING", {"default": "", "multiline": False, "tooltip": "或输入完整路径"}),
             }
         }
 
     @classmethod
-    def VALIDATE_INPUTS(cls, csv_path=""):
+    def VALIDATE_INPUTS(cls, csv_file="", csv_path=""):
         """验证输入参数 - 在节点创建时允许空值"""
         # 允许节点创建，在执行时再检查
         return True
@@ -39,13 +50,24 @@ class CSVBatchReader:
     @classmethod
     def INPUT_LABELS(cls):
         return {
+            "csv_file": "CSV文件",
             "csv_path": "文件路径",
         }
 
     @classmethod
-    def IS_CHANGED(cls, csv_path=""):
+    def IS_CHANGED(cls, csv_file="", csv_path=""):
         """检测输入是否改变"""
-        # 检查文件路径
+        # 优先检查 csv_file（从 input 目录）
+        if csv_file and csv_file.strip() and HAS_FOLDER_PATHS:
+            try:
+                input_dir = folder_paths.get_input_directory()
+                file_path = os.path.join(input_dir, csv_file)
+                if os.path.exists(file_path):
+                    return os.path.getmtime(file_path)
+            except:
+                pass
+
+        # 其次检查 csv_path
         if csv_path and csv_path.strip():
             csv_path = csv_path.strip()
             if os.path.exists(csv_path):
@@ -53,47 +75,57 @@ class CSVBatchReader:
 
         return float("nan")
 
-    def read_csv(self, csv_path=""):
+    def read_csv(self, csv_file="", csv_path=""):
         """读取 CSV 文件并返回 JSON 格式的任务列表
 
         Args:
-            csv_path: CSV 文件路径（支持绝对路径或相对于 input 目录的文件名）
+            csv_file: 从下拉列表选择的文件名（input 目录）
+            csv_path: 或输入完整路径
         """
         try:
-            # 检查是否提供了文件路径
-            if not csv_path or csv_path.strip() == "":
+            file_path = None
+
+            # 优先使用 csv_file（从 input 目录选择）
+            if csv_file and csv_file.strip():
+                if not HAS_FOLDER_PATHS:
+                    raise RuntimeError("folder_paths 模块不可用，请使用 csv_path 参数")
+
+                input_dir = folder_paths.get_input_directory()
+                file_path = os.path.join(input_dir, csv_file)
+
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError(f"文件不存在: {csv_file}")
+
+                print(f"[CSVBatchReader] 从 input 目录读取: {csv_file}")
+
+            # 其次使用 csv_path
+            elif csv_path and csv_path.strip():
+                file_path = csv_path.strip()
+
+                # 如果不是绝对路径，尝试从 input 目录读取
+                if not os.path.isabs(file_path) and HAS_FOLDER_PATHS:
+                    try:
+                        input_dir = folder_paths.get_input_directory()
+                        potential_path = os.path.join(input_dir, file_path)
+                        if os.path.exists(potential_path):
+                            file_path = potential_path
+                            print(f"[CSVBatchReader] 从 input 目录读取: {csv_path}")
+                    except:
+                        pass
+
+                # 检查文件是否存在
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError(f"CSV 文件不存在: {file_path}")
+
+                print(f"[CSVBatchReader] 读取文件: {file_path}")
+
+            else:
                 raise ValueError(
-                    "请输入 CSV 文件路径。\n\n"
+                    "请选择或输入 CSV 文件。\n\n"
                     "使用方法：\n"
-                    "1. 将 CSV 文件复制到 ComfyUI/input/ 目录\n"
-                    "2. 在 'csv_path' 中输入文件名（如 'myfile.csv'）\n"
-                    "3. 或输入完整路径（如 '/path/to/file.csv'）"
+                    "1. 从 'csv_file' 下拉列表选择 input 目录中的文件\n"
+                    "2. 或在 'csv_path' 中输入完整路径"
                 )
-
-            file_path = csv_path.strip()
-
-            # 如果不是绝对路径，尝试从 input 目录读取
-            if not os.path.isabs(file_path) and HAS_FOLDER_PATHS:
-                try:
-                    input_dir = folder_paths.get_input_directory()
-                    potential_path = os.path.join(input_dir, file_path)
-                    if os.path.exists(potential_path):
-                        file_path = potential_path
-                        print(f"[CSVBatchReader] 从 input 目录读取: {csv_path}")
-                except:
-                    pass
-
-            # 检查文件是否存在
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(
-                    f"CSV 文件不存在: {file_path}\n\n"
-                    f"请检查：\n"
-                    f"1. 文件路径是否正确\n"
-                    f"2. 文件是否已上传到 ComfyUI/input/ 目录\n"
-                    f"3. 文件名是否包含正确的扩展名 (.csv)"
-                )
-
-            print(f"[CSVBatchReader] 读取文件: {file_path}")
 
             # 检查文件扩展名
             if not file_path.lower().endswith('.csv'):
