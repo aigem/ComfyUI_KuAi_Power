@@ -47,7 +47,7 @@ class NanoBananaAIO:
                 "prompt": ("STRING", {"multiline": True, "default": "A futuristic nano banana dish", "tooltip": "图像生成提示词"}),
                 "image_count": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1, "tooltip": "生成图像数量"}),
                 "use_search": ("BOOLEAN", {"default": True, "tooltip": "启用网络搜索增强"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "随机种子值，0为随机"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647, "tooltip": "随机种子值，0为随机（INT32范围）"}),
             },
             "optional": {
                 "system_prompt": ("STRING", {"multiline": True, "default": "", "tooltip": "系统提示词，用于指导 AI 的行为和风格"}),
@@ -118,9 +118,9 @@ class NanoBananaAIO:
             if not api_key:
                 return self._handle_error("未配置 API Key，请设置 KUAI_API_KEY 环境变量或在节点中填写")
 
-            # 处理种子值：0表示随机
+            # 处理种子值：0表示随机（INT32范围）
             if seed == 0:
-                actual_seed = random.randint(1, 0xffffffffffffffff)
+                actual_seed = random.randint(1, 2147483647)
                 print(f"[NanoBanana] 使用随机种子: {actual_seed}")
             else:
                 actual_seed = seed
@@ -348,7 +348,7 @@ class NanoBananaMultiTurnChat:
                 "model_name": (model_list, {"default": model_list[0], "tooltip": "选择 Gemini 模型"}),
                 "prompt": ("STRING", {"multiline": True, "default": "Create an image of a clear perfume bottle sitting on a vanity.", "tooltip": "对话提示词"}),
                 "reset_chat": ("BOOLEAN", {"default": False, "tooltip": "重置对话历史"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "随机种子值，0为随机"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647, "tooltip": "随机种子值，0为随机（INT32范围）"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
                 "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对gemini-3-pro-image-preview起作用"}),
@@ -411,9 +411,9 @@ class NanoBananaMultiTurnChat:
             if not api_key:
                 return self._handle_error("未配置 API Key")
 
-            # 处理种子值：0表示随机
+            # 处理种子值：0表示随机（INT32范围）
             if seed == 0:
-                actual_seed = random.randint(1, 0xffffffffffffffff)
+                actual_seed = random.randint(1, 2147483647)
                 print(f"[NanoBanana] 使用随机种子: {actual_seed}")
             else:
                 actual_seed = seed
