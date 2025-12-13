@@ -18,31 +18,16 @@ class CSVBatchReader:
 
     @classmethod
     def INPUT_TYPES(cls):
-        # 获取上传的 CSV 文件列表
-        csv_files = []
-        if HAS_FOLDER_PATHS:
-            try:
-                input_dir = folder_paths.get_input_directory()
-                if os.path.exists(input_dir):
-                    csv_files = [f for f in os.listdir(input_dir) if f.lower().endswith('.csv')]
-            except Exception as e:
-                print(f"[CSVBatchReader] 无法读取 input 目录: {e}")
-
-        # 如果没有文件，提供一个空字符串作为默认值
-        if not csv_files:
-            csv_files = [""]
-
         return {
             "required": {},
             "optional": {
-                "csv_file": (sorted(csv_files), {"default": csv_files[0] if csv_files else "", "tooltip": "从下拉菜单选择已上传的 CSV 文件"}),
                 "upload": ("IMAGEUPLOAD", {"tooltip": "点击上传 CSV 文件（上传后需刷新节点）"}),
-                "csv_path": ("STRING", {"default": "", "multiline": False, "tooltip": "或者直接输入 CSV 文件的完整路径"}),
+                "csv_path": ("STRING", {"default": "", "multiline": False, "tooltip": "直接输入 CSV 文件的完整路径"}),
             }
         }
 
     @classmethod
-    def VALIDATE_INPUTS(cls, csv_file=None, csv_path="", upload=None):
+    def VALIDATE_INPUTS(cls, csv_path="", upload=None):
         """验证输入参数 - 在节点创建时允许空值"""
         # 允许节点创建，在执行时再检查
         return True
@@ -55,25 +40,14 @@ class CSVBatchReader:
     @classmethod
     def INPUT_LABELS(cls):
         return {
-            "csv_file": "CSV文件",
             "upload": "上传文件",
             "csv_path": "文件路径",
         }
 
     @classmethod
-    def IS_CHANGED(cls, csv_file=None, csv_path=""):
+    def IS_CHANGED(cls, csv_path="", upload=None):
         """检测输入是否改变"""
-        # 优先使用 csv_file
-        if csv_file and HAS_FOLDER_PATHS:
-            try:
-                input_dir = folder_paths.get_input_directory()
-                file_path = os.path.join(input_dir, csv_file)
-                if os.path.exists(file_path):
-                    return os.path.getmtime(file_path)
-            except:
-                pass
-
-        # 其次使用 csv_path
+        # 检查文件路径
         if csv_path and csv_path.strip():
             csv_path = csv_path.strip()
             if os.path.exists(csv_path):
@@ -81,47 +55,48 @@ class CSVBatchReader:
 
         return float("nan")
 
-    def read_csv(self, csv_file=None, upload=None, csv_path=""):
+    def read_csv(self, upload=None, csv_path=""):
         """读取 CSV 文件并返回 JSON 格式的任务列表
 
         Args:
-            csv_file: 从下拉菜单选择的文件名
-            upload: 文件上传 widget（仅用于触发上传界面）
-            csv_path: 直接输入的文件路径
+            upload: 文件上传 widget（上传后文件会保存到 input 目录）
+            csv_path: 直接输入的文件路径（支持绝对路径或相对于 input 目录的路径）
         """
         try:
-            # 检查是否提供了有效的输入
-            if (not csv_file or csv_file.strip() == "") and (not csv_path or csv_path.strip() == ""):
-                raise ValueError("请上传 CSV 文件或输入文件路径。\n\n使用方法：\n1. 点击 'upload' 上传文件，然后刷新节点\n2. 或在 'csv_path' 中输入完整路径")
+            # 检查是否提供了文件路径
+            if not csv_path or csv_path.strip() == "":
+                raise ValueError(
+                    "请输入 CSV 文件路径。\n\n"
+                    "使用方法：\n"
+                    "1. 点击 'upload' 上传文件到 ComfyUI/input/ 目录\n"
+                    "2. 在 'csv_path' 中输入文件名（如 'myfile.csv'）或完整路径\n"
+                    "3. 如果文件在 input 目录，只需输入文件名即可"
+                )
 
-            # 确定文件路径（优先使用 csv_file）
-            file_path = None
+            file_path = csv_path.strip()
 
-            if csv_file and csv_file.strip():
-                # 从 ComfyUI 的 input 目录读取
-                if not HAS_FOLDER_PATHS:
-                    raise RuntimeError("文件上传功能不可用，请使用 csv_path 参数直接输入文件路径")
+            # 如果不是绝对路径，尝试从 input 目录读取
+            if not os.path.isabs(file_path) and HAS_FOLDER_PATHS:
+                try:
+                    input_dir = folder_paths.get_input_directory()
+                    potential_path = os.path.join(input_dir, file_path)
+                    if os.path.exists(potential_path):
+                        file_path = potential_path
+                        print(f"[CSVBatchReader] 从 input 目录读取: {csv_path}")
+                except:
+                    pass
 
-                input_dir = folder_paths.get_input_directory()
-                file_path = os.path.join(input_dir, csv_file)
+            # 检查文件是否存在
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(
+                    f"CSV 文件不存在: {file_path}\n\n"
+                    f"请检查：\n"
+                    f"1. 文件路径是否正确\n"
+                    f"2. 文件是否已上传到 ComfyUI/input/ 目录\n"
+                    f"3. 文件名是否包含正确的扩展名 (.csv)"
+                )
 
-                if not os.path.exists(file_path):
-                    raise FileNotFoundError(f"上传的文件不存在: {csv_file}")
-
-                print(f"[CSVBatchReader] 读取上传的文件: {csv_file}")
-
-            elif csv_path and csv_path.strip():
-                # 使用直接输入的路径
-                file_path = csv_path.strip()
-
-                # 检查文件是否存在
-                if not os.path.exists(file_path):
-                    raise FileNotFoundError(f"CSV 文件不存在: {file_path}")
-
-                print(f"[CSVBatchReader] 读取路径文件: {file_path}")
-
-            else:
-                raise ValueError("请上传 CSV 文件或输入文件路径")
+            print(f"[CSVBatchReader] 读取文件: {file_path}")
 
             # 检查文件扩展名
             if not file_path.lower().endswith('.csv'):
