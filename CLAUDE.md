@@ -261,9 +261,32 @@ POST /v1/chat/completions  // AI text generation
 }
 ```
 
-## Complete Node Creation Workflow
+## Complete Node Creation Workflow (10 Steps)
 
 When creating new image generation or video generation nodes, follow this comprehensive workflow to ensure proper integration with CSV batch processing and the plugin ecosystem.
+
+### Workflow Overview
+
+1. **Plan the Node** - Define purpose, API, CSV compatibility, category
+2. **Create Node Implementation** - Write the core generation node
+3. **Register the Node** - Add to category's `__init__.py`
+4. **Update Frontend Panel** - Add category to quick panel (if new)
+5. **Create Documentation** - Write detailed usage guide
+6. **Create Test File** - Write comprehensive test suite
+7. **Run Tests** - Verify registration, execution, CSV compatibility
+8. **Verify Integration** - Test in ComfyUI UI
+9. **Create CSV Batch Processor** - Add batch processing support (for generation nodes)
+   - 9.1: Create batch processor node
+   - 9.2: Register batch processor
+   - 9.3: Create sample CSV files (3+)
+   - 9.4: Create CSV usage guide
+   - 9.5: Create batch processor tests
+   - 9.6: Test batch processing
+10. **Update Main Documentation** - Update README and guides
+
+**Note**: Step 9 (CSV Batch Processor) applies to image/video generation nodes. Skip for utility nodes.
+
+---
 
 ### Step 1: Plan the Node
 
@@ -652,21 +675,396 @@ python diagnose.py
    - Add node to canvas
    - Configure parameters
    - Execute and verify output
-5. **Test CSV batch processing** (if applicable):
-   - Create test CSV file
-   - Use CSVBatchReader + your batch processor
-   - Verify batch execution
 
-### Step 9: Update Main Documentation
+### Step 9: Create CSV Batch Processor (for generation nodes)
+
+**Note**: This step applies to image/video generation nodes. Skip for utility nodes.
+
+#### 9.1: Create Batch Processor Node
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/nodes/CategoryName/batch_processor.py`
+
+**Template**:
+```python
+"""CategoryName 批量处理器"""
+
+import json
+import os
+import time
+from ..Sora2.kuai_utils import env_or
+from .node_name import MyGenerationNode
+
+class MyBatchProcessor:
+    """批量处理器"""
+
+    def __init__(self):
+        self.generator = MyGenerationNode()
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "batch_tasks": ("STRING", {
+                    "forceInput": True,
+                    "tooltip": "来自 CSV 读取器的批量任务数据"
+                }),
+                "api_key": ("STRING", {
+                    "default": "",
+                    "tooltip": "API 密钥"
+                }),
+                "output_dir": ("STRING", {
+                    "default": "./output/batch",
+                    "tooltip": "输出目录"
+                }),
+                "delay_between_tasks": ("FLOAT", {
+                    "default": 2.0,
+                    "min": 0.0,
+                    "max": 60.0,
+                    "step": 0.5,
+                    "tooltip": "任务间延迟（秒）"
+                }),
+            }
+        }
+
+    @classmethod
+    def INPUT_LABELS(cls):
+        return {
+            "batch_tasks": "批量任务",
+            "api_key": "API密钥",
+            "output_dir": "输出目录",
+            "delay_between_tasks": "任务间延迟",
+        }
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("处理结果", "输出目录")
+    FUNCTION = "process_batch"
+    CATEGORY = "KuAi/CategoryName"
+
+    def process_batch(self, batch_tasks, api_key="", output_dir="./output/batch",
+                     delay_between_tasks=2.0):
+        """批量处理任务"""
+        try:
+            # 解析任务数据
+            tasks = json.loads(batch_tasks)
+            if not tasks:
+                raise ValueError("没有任务需要处理")
+
+            # 获取 API Key
+            api_key = env_or(api_key, "KUAI_API_KEY")
+            if not api_key:
+                raise ValueError("未配置 API Key")
+
+            # 创建输出目录
+            os.makedirs(output_dir, exist_ok=True)
+
+            # 处理结果统计
+            results = {
+                "total": len(tasks),
+                "success": 0,
+                "failed": 0,
+                "errors": [],
+                "task_ids": []
+            }
+
+            print(f"\n{'='*60}")
+            print(f"[Batch] 开始批量处理 {len(tasks)} 个任务")
+            print(f"{'='*60}\n")
+
+            # 逐个处理任务
+            for idx, task in enumerate(tasks, start=1):
+                try:
+                    print(f"\n[{idx}/{len(tasks)}] 处理任务 (行 {task.get('_row_number', '?')})")
+
+                    # 处理单个任务
+                    task_info = self._process_single_task(task, idx, api_key, output_dir)
+
+                    results["success"] += 1
+                    results["task_ids"].append(task_info)
+                    print(f"✓ 任务 {idx} 完成")
+
+                except Exception as e:
+                    results["failed"] += 1
+                    error_msg = f"任务 {idx}: {str(e)}"
+                    results["errors"].append(error_msg)
+                    print(f"✗ {error_msg}")
+
+                # 任务间延迟
+                if idx < len(tasks) and delay_between_tasks > 0:
+                    time.sleep(delay_between_tasks)
+
+            # 保存任务列表
+            tasks_file = os.path.join(output_dir, "tasks.json")
+            with open(tasks_file, 'w', encoding='utf-8') as f:
+                json.dump(results["task_ids"], f, ensure_ascii=False, indent=2)
+
+            # 生成结果报告
+            report = self._generate_report(results)
+            print(f"\n{'='*60}")
+            print(report)
+            print(f"{'='*60}\n")
+
+            return (report, output_dir)
+
+        except Exception as e:
+            error_msg = f"批量处理失败: {str(e)}"
+            print(f"[Batch] {error_msg}")
+            raise RuntimeError(error_msg)
+
+    def _process_single_task(self, task, task_idx, api_key, output_dir):
+        """处理单个任务 - 根据实际节点实现"""
+        # 解析任务参数
+        prompt = task.get("prompt", "").strip()
+        if not prompt:
+            raise ValueError("提示词不能为空")
+
+        # 调用生成器
+        result = self.generator.generate(
+            prompt=prompt,
+            api_key=api_key,
+            # ... 其他参数
+        )
+
+        # 保存结果
+        task_info = {
+            "task_id": f"task_{task_idx}",
+            "prompt": prompt,
+            "created_at": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        return task_info
+
+    def _generate_report(self, results):
+        """生成处理结果报告"""
+        lines = [
+            "\n批量处理完成",
+            f"总任务数: {results['total']}",
+            f"成功: {results['success']}",
+            f"失败: {results['failed']}",
+        ]
+
+        if results['errors']:
+            lines.append("\n失败任务详情:")
+            for error in results['errors']:
+                lines.append(f"  - {error}")
+
+        return "\n".join(lines)
+
+
+NODE_CLASS_MAPPINGS = {
+    "MyBatchProcessor": MyBatchProcessor,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "MyBatchProcessor": "📦 My Batch Processor",
+}
+```
+
+#### 9.2: Register Batch Processor
+
+Update `nodes/CategoryName/__init__.py`:
+```python
+from .node_name import MyGenerationNode
+from .batch_processor import MyBatchProcessor
+
+NODE_CLASS_MAPPINGS = {
+    "MyGenerationNode": MyGenerationNode,
+    "MyBatchProcessor": MyBatchProcessor,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "MyGenerationNode": "🎨 My Generation Node",
+    "MyBatchProcessor": "📦 My Batch Processor",
+}
+```
+
+#### 9.3: Create Sample CSV Files
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/examples/category_batch_basic.csv`
+
+**Example**:
+```csv
+prompt,model_name,seed,output_prefix
+"Example prompt 1",model-1,12345,example_1
+"Example prompt 2",model-2,0,example_2
+"Example prompt 3",model-1,67890,example_3
+```
+
+Create at least 3 sample CSV files:
+1. `category_batch_basic.csv` - Basic examples
+2. `category_batch_advanced.csv` - Advanced examples with all parameters
+3. `category_batch_template.csv` - Chinese template for users to copy
+
+#### 9.4: Create CSV Usage Guide
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/examples/CATEGORY_CSV_GUIDE.md`
+
+**Template**:
+```markdown
+# CategoryName 批量处理 CSV 使用指南
+
+## CSV 格式
+
+### 必需列
+- `prompt` - 提示词
+
+### 可选列
+- `model_name` - 模型名称（默认：model-1）
+- `seed` - 随机种子（默认：0）
+- `output_prefix` - 输出前缀
+
+## 使用步骤
+
+1. 准备 CSV 文件
+2. 在 ComfyUI 中设置工作流：CSVBatchReader → MyBatchProcessor
+3. 配置参数
+4. 执行处理
+5. 查看结果
+
+## 示范文件
+
+- `category_batch_basic.csv` - 基础示例
+- `category_batch_advanced.csv` - 高级示例
+- `category_batch_template.csv` - 中文模板
+
+## 常见问题
+
+Q: CSV 文件编码问题？
+A: 确保使用 UTF-8 编码保存。
+
+Q: 提示词包含逗号怎么办？
+A: 用双引号包裹整个提示词。
+```
+
+#### 9.5: Create Batch Processor Tests
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/test/test_category_batch.py`
+
+**Template**:
+```python
+#!/usr/bin/env python3
+"""测试 CategoryName 批量处理器"""
+
+import sys
+import os
+import json
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+def test_batch_processor_registration():
+    """测试批量处理器注册"""
+    print("=" * 60)
+    print("测试 1: 批量处理器注册")
+    print("=" * 60)
+
+    try:
+        from nodes.CategoryName import NODE_CLASS_MAPPINGS
+
+        if 'MyBatchProcessor' in NODE_CLASS_MAPPINGS:
+            print("✅ MyBatchProcessor 已注册")
+            return True
+        else:
+            print("❌ MyBatchProcessor 未注册")
+            return False
+
+    except Exception as e:
+        print(f"❌ 测试失败: {e}")
+        return False
+
+def test_batch_processing_with_api():
+    """测试批量处理（实际 API）"""
+    print("\n" + "=" * 60)
+    print("测试 2: 批量处理（实际 API）")
+    print("=" * 60)
+
+    api_key = os.environ.get("KUAI_API_KEY", "")
+    if not api_key:
+        print("⚠️  跳过执行测试（未设置 KUAI_API_KEY）")
+        return True
+
+    try:
+        from nodes.CategoryName import NODE_CLASS_MAPPINGS
+
+        node = NODE_CLASS_MAPPINGS['MyBatchProcessor']()
+
+        # 创建测试任务
+        mock_tasks = [
+            {
+                "_row_number": 2,
+                "prompt": "Test prompt 1",
+                "output_prefix": "test_1"
+            },
+            {
+                "_row_number": 3,
+                "prompt": "Test prompt 2",
+                "output_prefix": "test_2"
+            }
+        ]
+
+        batch_tasks_json = json.dumps(mock_tasks)
+
+        print("🔄 执行批量处理测试...")
+        result, output_dir = node.process_batch(
+            batch_tasks=batch_tasks_json,
+            api_key=api_key,
+            output_dir="./test_output/batch",
+            delay_between_tasks=1.0
+        )
+
+        print(f"✅ 批量处理成功")
+        print(f"   输出目录: {output_dir}")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ 执行测试失败: {e}")
+        return False
+
+if __name__ == "__main__":
+    print("\n🧪 CategoryName 批量处理器测试套件\n")
+
+    results = []
+    results.append(("批量处理器注册", test_batch_processor_registration()))
+    results.append(("批量处理实际 API", test_batch_processing_with_api()))
+
+    print("\n" + "=" * 60)
+    print("测试总结")
+    print("=" * 60)
+
+    for name, passed in results:
+        status = "✅ 通过" if passed else "❌ 失败"
+        print(f"{name}: {status}")
+
+    all_passed = all(r[1] for r in results)
+    print("\n" + ("🎉 所有测试通过！" if all_passed else "⚠️  部分测试失败"))
+
+    sys.exit(0 if all_passed else 1)
+```
+
+#### 9.6: Test Batch Processing
+
+```bash
+# Run batch processor tests
+KUAI_API_KEY=your_key_here python test/test_category_batch.py
+
+# Verify CSV files
+ls -lh examples/category_*.csv
+
+# Check CSV guide
+cat examples/CATEGORY_CSV_GUIDE.md
+```
+
+### Step 10: Update Main Documentation
 
 Add node information to:
 - `/workspaces/ComfyUI_KuAi_Power/README.md` - User-facing documentation
 - `/workspaces/ComfyUI_KuAi_Power/CLAUDE.md` - This file (if architectural changes)
+- Update main node guide to include batch processor information
 
 ### Checklist for New Nodes
 
 Before considering a node complete, verify:
 
+#### Core Node (Steps 1-8)
 - [ ] Node file created in correct `nodes/CategoryName/` directory
 - [ ] Node class implements all required methods (INPUT_TYPES, RETURN_TYPES, FUNCTION, CATEGORY)
 - [ ] Chinese labels provided via INPUT_LABELS
@@ -678,9 +1076,29 @@ Before considering a node complete, verify:
 - [ ] Tests pass (registration, execution, CSV compatibility)
 - [ ] Node appears in ComfyUI UI quick panel
 - [ ] Node executes successfully in ComfyUI
-- [ ] CSV batch processing works (if applicable)
 - [ ] Error messages are user-friendly and in Chinese
 - [ ] Logging uses `[ComfyUI_KuAi_Power]` prefix
+
+#### CSV Batch Processing (Step 9 - for generation nodes)
+- [ ] Batch processor node created (`batch_processor.py`)
+- [ ] Batch processor registered in `__init__.py`
+- [ ] At least 3 sample CSV files created in `examples/`
+  - [ ] `category_batch_basic.csv` - Basic examples
+  - [ ] `category_batch_advanced.csv` - Advanced examples (optional)
+  - [ ] `category_batch_template.csv` - Chinese template
+- [ ] CSV usage guide created (`examples/CATEGORY_CSV_GUIDE.md`)
+- [ ] Batch processor test file created (`test/test_category_batch.py`)
+- [ ] Batch processor tests pass (registration, API execution)
+- [ ] CSV files use UTF-8 encoding
+- [ ] CSV format documented with all columns explained
+- [ ] Batch processor appears in ComfyUI UI
+- [ ] Batch processing works with CSVBatchReader node
+
+#### Documentation (Step 10)
+- [ ] Main documentation updated (`README.md`)
+- [ ] CLAUDE.md updated (if architectural changes)
+- [ ] Node guide includes batch processor information
+- [ ] Examples directory has README.md explaining CSV files
 
 ### Common Patterns for CSV Batch Processing
 

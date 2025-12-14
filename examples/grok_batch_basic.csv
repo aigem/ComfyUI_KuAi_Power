@@ -1,0 +1,6 @@
+prompt,aspect_ratio,size,image_urls,output_prefix
+"A cute cat playing with a colorful ball in a sunny garden, slow motion, cinematic lighting",3:2,1080P,,cat_playing
+"A majestic eagle soaring through the clouds at sunset, aerial view, 4K quality",3:2,1080P,,eagle_sunset
+"A dancer performing in the rain, dramatic lighting, close-up shot, artistic style",2:3,1080P,,dancer_rain
+"A beautiful landscape with mountains and rivers, time-lapse, golden hour",1:1,720P,,landscape_timelapse
+"A sports car driving on a coastal highway, tracking shot, cinematic",3:2,1080P,,car_highway

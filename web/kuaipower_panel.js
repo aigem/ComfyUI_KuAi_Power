@@ -8,6 +8,7 @@ app.registerExtension({
       "ScriptGenerator": "📝 脚本生成",
       "Sora2": "🎬 Sora2 视频生成",
       "Veo3": "🚀 Veo3.1 视频生成",
+      "Grok": "🤖 Grok 视频生成",
       "NanoBanana": "🍌 Nano Banana 图像生成",
       "Utils": "🛠️ 工具节点",
       "Product": "📦 产品管理",

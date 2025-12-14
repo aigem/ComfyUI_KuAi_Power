@@ -1,0 +1,4 @@
+prompt,aspect_ratio,size,image_urls,output_prefix
+"Animate this image with gentle camera movement and natural lighting",3:2,1080P,https://example.com/image1.jpg,animated_scene_1
+"Add dynamic motion to this scene, cinematic style",2:3,1080P,https://example.com/image2.jpg,animated_scene_2
+"Transform this image into a video with smooth transitions",1:1,720P,https://example.com/image3.jpg,animated_scene_3
