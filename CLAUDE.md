@@ -1,65 +1,90 @@
-# ComfyUI_KuAi_Power - 项目文档
+# CLAUDE.md
 
-## 项目概述
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**ComfyUI_KuAi_Power** 是一个 ComfyUI 扩展插件，为中文用户提供 AI 视频生成和电商脚本创作功能。通过集成 api.kuai.host 的API 服务，支持 Sora2 和 Veo3 视频生成、Nano Banana 相关模型，专注于电商视频内容创作场景。
+## Project Overview
 
-### 核心特性
-- 🎬 **多模型支持**: Sora2、Veo3.1 等主流视频生成模型
-- 🖼️ **图像生成**: 基于 Gemini 的 Nano Banana 多模态图像生成
-- 🇨🇳 **中文界面**: 全中文节点标签和提示，降低使用门槛
-- 🛍️ **电商优化**: AI 驱动的产品视频脚本生成
-- 💬 **多轮对话**: 支持迭代式图像编辑和渐进式创作
-- ⚡ **异步处理**: 支持任务提交和轮询查询
-- 🔧 **工具集成**: 图片上传、OCR 识别等实用工具
-- 📦 **批量处理**: CSV 驱动的批量图像生成和编辑
-- 🎲 **种子值控制**: 支持可复现的图像生成
-- 🎨 **系统提示词**: 精确控制 AI 的风格和行为
+**ComfyUI_KuAi_Power** is a ComfyUI extension plugin providing AI video generation (Sora2, Veo3) and image generation (Nano Banana/Gemini) capabilities through the kuai.host API. The plugin is designed for Chinese users with full Chinese UI labels and focuses on e-commerce video content creation.
 
----
+**Key Technologies**: ComfyUI nodes, Pydantic settings, async task polling, PIL image processing, kuai.host API integration
 
-## 技术架构
+## Development Commands
 
-### 目录结构
-```
-ComfyUI_KuAi_Power/
-├── __init__.py              # 节点自动注册系统
-├── config.py                # 全局配置管理 (Pydantic)
-├── requirements.txt         # Python 依赖
-├── diagnose.py             # 诊断工具
-├── nodes/                  # 节点实现
-│   ├── Sora2/             # Sora2 视频生成节点
-│   │   ├── sora2.py       # 核心节点类
-│   │   ├── script_generator.py  # AI 脚本生成
-│   │   └── kuai_utils.py  # 工具函数库
-│   ├── Veo3/              # Veo3 视频生成节点
-│   │   └── veo3.py
-│   ├── NanoBanana/        # Nano Banana 图像生成节点
-│   │   ├── nano_banana.py # 多模态图像生成
-│   │   └── batch_processor.py  # 批量处理器
-│   └── Utils/             # 工具节点
-│       ├── image_upload.py
-│       ├── deepseek_ocr.py
-│       └── csv_reader.py  # CSV 批量读取器
-├── web/                   # 前端扩展
-│   ├── kuaipower_panel.js # 快捷面板 (Ctrl+Shift+K)
-│   └── video_preview.js
-└── workflows/             # 预置工作流模板
+### Installation & Setup
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run diagnostics to verify setup
+python diagnose.py
+
+# Configure API key (choose one method)
+export KUAI_API_KEY=your_key_here
+# OR create .env file
+echo "KUAI_API_KEY=your_key_here" > .env
 ```
 
-### 依赖项
+### Testing
+```bash
+# Test CSV nodes
+python test_csv_nodes.py
+
+# Test node labels
+python test_labels.py
+
+# Manual API testing
+curl -H "Authorization: Bearer $KUAI_API_KEY" https://api.kuai.host/v1/models
+```
+
+### Development Workflow
+1. Make changes to node files in `nodes/`
+2. Restart ComfyUI to reload nodes (no hot reload)
+3. Check ComfyUI console for `[ComfyUI_KuAi_Power]` log messages
+4. Test nodes in ComfyUI UI (Ctrl+Shift+K for quick panel)
+
+## Architecture
+
+### Node Auto-Registration System
+
+The plugin uses a **dynamic node discovery system** (`__init__.py:11-78`) that automatically registers all nodes without manual imports:
+
+1. **Root-level scan**: Loads `nodes/*.py` files
+2. **Subdirectory scan**: Recursively loads `nodes/*/` directories
+3. **Type detection**: Auto-detects classes with `INPUT_TYPES` and `RETURN_TYPES`
+4. **Mapping registration**: Populates `NODE_CLASS_MAPPINGS` and `NODE_DISPLAY_NAME_MAPPINGS`
+
+**Key Pattern**: Each subdirectory has an `__init__.py` that exports:
 ```python
-requests>=2.28.0      # HTTP 请求
-pillow>=9.0.0         # 图像处理
-numpy>=1.21.0         # 数值计算
-pydantic>=2.0.0       # 数据验证
-pydantic-settings>=2.0.0  # 配置管理
+NODE_CLASS_MAPPINGS = {"NodeClassName": NodeClass}
+NODE_DISPLAY_NAME_MAPPINGS = {"NodeClassName": "🎬 Display Name"}
 ```
 
-### 配置系统
-使用 Pydantic Settings 管理配置，支持 `.env` 文件和环境变量：
+### Directory Structure
+```
+nodes/
+├── Sora2/              # Sora2 video generation
+│   ├── __init__.py     # Exports NODE_CLASS_MAPPINGS
+│   ├── sora2.py        # Core video nodes
+│   ├── script_generator.py  # AI script generation
+│   └── kuai_utils.py   # Shared utilities
+├── Veo3/               # Veo3 video generation
+│   ├── __init__.py
+│   └── veo3.py
+├── NanoBanana/         # Gemini image generation
+│   ├── __init__.py
+│   ├── nano_banana.py  # Single/multi-turn image gen
+│   └── batch_processor.py  # CSV batch processing
+└── Utils/              # Utility nodes
+    ├── __init__.py
+    ├── image_upload.py
+    ├── deepseek_ocr.py
+    └── csv_reader.py
+```
+
+### Configuration System
+
+Uses **Pydantic Settings** (`config.py`) with `.env` file support:
 ```python
-# config.py:6-14
 class Settings(BaseSettings):
     WEBHOOK_BASE_PATH: str = "/webhook"
     SECRET_TOKEN: str = ""
@@ -70,468 +95,649 @@ class Settings(BaseSettings):
         env_file = ".env"
 ```
 
-**关键环境变量**:
-- `KUAI_API_KEY`: API 密钥（必需）
-- `HTTP_TIMEOUT`: 请求超时时间（默认 30 秒）
+**Environment Variables**:
+- `KUAI_API_KEY`: API key (required, can also be passed per-node)
+- `HTTP_TIMEOUT`: Request timeout in seconds (default: 30)
 
----
+### API Integration Patterns
 
-## 节点系统
+**Base URL**: `https://api.kuai.host`
 
-### 自动注册机制
-插件使用动态扫描机制自动注册所有节点（`__init__.py:11-78`）：
-
-1. **根级模块扫描**: 加载 `nodes/*.py` 文件
-2. **子目录扫描**: 递归加载 `nodes/*/` 目录
-3. **类型检测**: 自动识别包含 `INPUT_TYPES` 和 `RETURN_TYPES` 的类
-4. **映射注册**: 填充 `NODE_CLASS_MAPPINGS` 和 `NODE_DISPLAY_NAME_MAPPINGS`
-
-### 节点分类
-
-#### 1. Sora2 视频生成 (`KuAi/Sora2`)
-
-##### SoraCreateVideo
-**功能**: 创建图生视频任务
-**输入参数**:
-- `images` (STRING): 图片 URL 列表，逗号分隔
-- `prompt` (STRING): 视频提示词
-- `model` (ENUM): `sora-2` | `sora-2-pro`
-- `duration_sora2` (ENUM): `10` | `15` 秒
-- `duration_sora2pro` (ENUM): `15` | `25` 秒
-- `orientation` (ENUM): `portrait` | `landscape`
-- `size` (ENUM): `small` | `large`
-- `watermark` (BOOLEAN): 是否添加水印
-
-**返回值**: `(任务ID, 状态, 状态更新时间)`
-
-**实现位置**: `nodes/Sora2/sora2.py:8-87`
-
-##### SoraText2Video
-**功能**: 纯文本生成视频（无参考图）
-**特点**: 参数与 `SoraCreateVideo` 类似，但不需要 `images` 参数
-
-##### SoraQueryTask
-**功能**: 查询任务状态和结果
-**输入**: `task_id` (STRING)
-**返回**: `(任务ID, 状态, 视频URL, 状态更新时间)`
-
-##### SoraCreateAndWait
-**功能**: 一键生成视频（自动轮询等待）
-**特点**:
-- 提交任务后自动轮询直到完成
-- 支持自定义轮询间隔和最大等待时间
-- 失败时抛出详细错误信息
-
-#### 2. Veo3 视频生成 (`KuAi/Veo3`)
-
-##### VeoText2Video
-**功能**: Veo 模型文生视频
-**输入参数**:
-- `prompt` (STRING): 视频提示词（支持中英文）
-- `model` (ENUM): `veo3.1` | `veo3` | `veo3-fast` | `veo3-pro`
-- `aspect_ratio` (ENUM): `16:9` | `9:16`
-- `enhance_prompt` (BOOLEAN): 自动优化并翻译中文提示词
-- `enable_upsample` (BOOLEAN): 启用超分提升质量
-
-**实现位置**: `nodes/Veo3/veo3.py:8-60`
-
-##### VeoImage2Video
-**功能**: Veo 模型图生视频
-**特点**:
-- 支持 1-3 张参考图（首帧、尾帧、元素）
-- 支持 `veo3.1-components` 和 `veo2-fast-components` 模型
-- 参考图通过 `image_1`, `image_2`, `image_3` 可选参数传入
-
-##### VeoQueryTask
-**功能**: 查询 Veo 任务状态
-**返回**: `(任务ID, 状态, 视频URL, 状态更新时间)`
-
-##### VeoText2VideoAndWait / VeoImage2VideoAndWait
-**功能**: 一键生成并等待完成
-**参数**:
-- `poll_interval` (INT): 轮询间隔（默认 10 秒）
-- `max_wait_time` (INT): 最大等待时间（默认 600 秒）
-
-#### 3. AI 脚本生成 (`KuAi/ScriptGenerator`)
-
-##### ProductInfoBuilder
-**功能**: 结构化产品信息
-**输入参数**:
-- `product_name` (STRING): 产品名称
-- `product_category` (STRING): 产品类别
-- `key_features` (STRING): 核心卖点（多行）
-- `target_audience` (STRING): 目标受众
-- `video_type` (ENUM): 产品介绍 | 促销活动 | 产品评测 | 直播卖点
-- `duration` (ENUM): `10` | `15` | `25` 秒
-- `language` (ENUM): 中文 | 英文 | 日语 | 韩语 | 俄语 | 中亚语言
-
-**返回值**: `(产品信息JSON字符串)`
-
-**实现位置**: `nodes/Sora2/script_generator.py`
-
-##### SoraPromptFromProduct
-**功能**: 使用 AI 生成专业视频脚本
-**输入**:
-- `product_info` (STRING): 产品信息 JSON
-- `custom_requirements` (STRING): 自定义需求（可选）
-- `system_prompt` (STRING): 系统提示词（可自定义）
-
-**AI 模型**: `deepseek-v3.2-exp`
-**特点**:
-- 专业电商视频导演助手角色设定
-- 遵循 Sora2 技术规格（时长、宽高比、音频能力）
-- 输出结构化分镜脚本（时间线、镜头、灯光、音效）
-- 支持多种视频风格（奢侈品、运动、日常、技术）
-
-**系统提示词结构** (`script_generator.py:6-100`):
-1. 身份认定：专业电商视频导演助手
-2. 核心职能：分镜脚本创作、情感营销、技术规范
-3. Sora2 技术规格：时长限制、音频能力、物理特性、已知局限
-4. 工作流程：解析输入 → 确定视觉策略 → 构建时间线 → 融入旁白音效 → 输出脚本
-
-#### 4. Nano Banana 图像生成 (`KuAi/NanoBanana`)
-
-基于 Google Gemini 模型的多模态图像生成节点，支持文生图、图生图、多轮对话等高级功能。
-
-##### NanoBananaAIO
-**功能**: Nano Banana Pro 多功能节点 - 统一的多模态图像生成接口
-**输入参数**:
-- `model_name` (ENUM): `gemini-3-pro-image-preview` | `gemini-2.5-flash-image`
-- `prompt` (STRING): 图像生成提示词
-- `image_count` (INT): 生成图像数量（1-10）
-- `use_search` (BOOLEAN): 启用网络搜索增强（仅 gemini-3-pro-image-preview）
-- `seed` (INT): 随机种子值（0 为随机，ComfyUI 标准）
-- `system_prompt` (STRING): 系统提示词，用于指导 AI 的行为和风格（可选）
-- `image_1` ~ `image_6` (IMAGE): 可选参考图像（最多 6 张）
-- `aspect_ratio` (ENUM): 图像宽高比（1:1, 16:9, 9:16 等）
-- `image_size` (ENUM): 图像尺寸（1K, 2K, 4K，仅 gemini-3-pro-image-preview）
-- `temperature` (FLOAT): 生成温度（0.0-2.0）
-- `api_base` (STRING): API 端点地址（默认 `https://api.kuai.host`）
-- `api_key` (STRING): API 密钥
-- `timeout` (INT): 超时时间（秒）
-
-**返回值**: `(图像, 思考过程, 引用来源)`
-
-**特点**:
-- **单/多图生成**: 通过 `image_count` 参数控制生成数量
-- **参考图支持**: 最多支持 6 张参考图像
-- **搜索增强**: 启用 `use_search` 可利用网络搜索提升生成质量（仅 gemini-3-pro-image-preview）
-- **种子值控制**: 支持固定种子值实现可复现生成，0 为随机
-- **系统提示词**: 通过 `system_prompt` 指导 AI 的整体风格和行为
-- **模型特定配置**: 自动根据模型类型使用正确的 API 参数
-- **Grounding**: 自动提取引用来源和思考过程
-- **灵活配置**: 支持自定义 API 端点和密钥
-
-**实现位置**: `nodes/NanoBanana/nano_banana.py`
-
-**模型差异**:
-- **gemini-3-pro-image-preview**: 支持 `image_size` 参数和 Google 搜索增强
-- **gemini-2.5-flash-image**: 速度更快，成本更低，不支持 `image_size` 和搜索增强
-
-**使用场景**:
-- 概念设计和创意探索
-- 基于参考图的风格迁移
-- 批量生成相似主题的图像
-- 需要引用来源的专业内容创作
-
-##### NanoBananaMultiTurnChat
-**功能**: Nano Banana 多轮对话节点 - 支持基于对话历史的迭代图像生成和编辑
-**输入参数**:
-- `model_name` (ENUM): `gemini-3-pro-image-preview` | `gemini-2.5-flash-image`
-- `prompt` (STRING): 对话提示词
-- `reset_chat` (BOOLEAN): 重置对话历史
-- `seed` (INT): 随机种子值（0 为随机）
-- `system_prompt` (STRING): 系统提示词（可选）
-- `aspect_ratio` (ENUM): 图像宽高比
-- `image_size` (ENUM): 图像尺寸（仅 gemini-3-pro-image-preview）
-- `temperature` (FLOAT): 生成温度
-- `image_input` (IMAGE): 初始参考图像（可选）
-- `api_base` (STRING): API 端点地址
-- `api_key` (STRING): API 密钥
-- `timeout` (INT): 超时时间
-
-**返回值**: `(图像, 响应文本, 元数据, 对话历史)`
-
-**特点**:
-- **对话记忆**: 保持对话历史，支持迭代修改
-- **上下文理解**: 基于之前生成的图像进行编辑
-- **渐进式创作**: 通过多轮对话逐步完善图像
-- **历史追踪**: 返回完整的对话历史记录
-- **种子值控制**: 支持固定种子值实现可复现生成
-- **系统提示词**: 通过 `system_prompt` 指导 AI 的整体风格和行为
-- **模型特定配置**: 自动根据模型类型使用正确的 API 参数
-
-**实现位置**: `nodes/NanoBanana/nano_banana.py`
-
-**使用场景**:
-- 迭代式图像编辑（"把背景改成蓝色"、"添加一只猫"）
-- 渐进式设计优化
-- 需要多次调整的创意工作
-- 基于反馈的图像改进
-
-**工作流示例**:
-```
-# 首次生成
-Prompt: "Create an image of a clear perfume bottle sitting on a vanity."
-→ 生成初始图像
-
-# 第二轮修改
-Prompt: "Make the bottle more elegant and add soft lighting."
-→ 基于第一轮图像进行修改
-
-# 第三轮调整
-Prompt: "Add some flowers in the background."
-→ 继续在之前基础上调整
-```
-
-#### 5. 工具节点 (`KuAi/Utils`)
-
-##### UploadToImageHost
-**功能**: 上传图片到临时图床
-**输入**:
-- `image` (IMAGE): ComfyUI 图像对象
-- `format` (ENUM): `jpeg` | `png` | `webp`
-- `quality` (INT): 图片质量（1-100）
-
-**返回**: `(图片URL)`
-**实现位置**: `nodes/Utils/image_upload.py`
-
-##### DeepseekOCRToPrompt
-**功能**: 从图片提取文本内容
-**输入**: `image` (IMAGE)
-**返回**: `(提取的文本)`
-**AI 模型**: `deepseek-ocr`
-
-##### CSVBatchReader
-**功能**: 读取 CSV 文件并解析为批量任务数据（支持文件上传和路径输入）
-**输入参数**:
-- `mode` (ENUM): 模式选择 - `upload` | `path`
-- `csv_file` (ENUM): 已上传的 CSV 文件（upload 模式）
-- `csv_path` (STRING): CSV 文件完整路径（path 模式）
-
-**返回**: `(批量任务数据)`
-**实现位置**: `nodes/Utils/csv_reader.py`
-
-**特点**:
-- **双模式支持**: upload 模式（从 ComfyUI input 目录）和 path 模式（直接输入路径）
-- **自动检测**: 自动扫描 input 目录中的 CSV 文件
-- **文件变更检测**: 使用 IS_CHANGED 方法自动检测文件修改
-- **输入验证**: 使用 VALIDATE_INPUTS 方法验证参数
-- **优雅降级**: folder_paths 不可用时自动切换到 path 模式
-- **UTF-8 编码**: 支持 UTF-8 和 UTF-8 BOM
-- **错误处理**: 详细的错误信息和文件验证
-
-**使用模式**:
-1. **Upload 模式**: 将 CSV 文件复制到 `ComfyUI/input/` 目录，从下拉菜单选择
-2. **Path 模式**: 直接输入 CSV 文件的完整路径（支持 Windows/macOS/Linux）
-
-**详细文档**: [CSV_UPLOAD_GUIDE.md](./CSV_UPLOAD_GUIDE.md)
-
-#### 6. 批量处理节点 (`KuAi/NanoBanana`)
-
-##### NanoBananaBatchProcessor
-**功能**: 批量处理图像生成任务
-**输入参数**:
-- `batch_tasks` (STRING): 来自 CSV 读取器的批量任务数据
-- `api_base` (STRING): API 端点地址
-- `api_key` (STRING): API 密钥
-- `output_dir` (STRING): 输出目录（默认 `./output/nanobana_batch`）
-- `delay_between_tasks` (FLOAT): 任务间延迟秒数（默认 2.0）
-
-**返回值**: `(处理结果, 输出目录)`
-**实现位置**: `nodes/NanoBanana/batch_processor.py`
-
-**特点**:
-- **批量文生图**: 支持批量生成全新图像
-- **批量图生图**: 支持批量编辑现有图像（最多 6 张参考图）
-- **自动保存**: 自动保存图像（PNG）和元数据（JSON）
-- **错误处理**: 自动跳过失败任务并继续处理
-- **详细报告**: 提供成功/失败统计和错误详情
-- **路径支持**: 支持 Windows、macOS、Linux 路径格式
-
-**CSV 格式**:
-- **必需列**: `task_type`（generate/edit/生图/改图）, `prompt`
-- **可选列**: `system_prompt`, `model_name`, `seed`, `aspect_ratio`, `image_size`, `temperature`, `use_search`, `image_1`~`image_6`, `output_prefix`
-
-**使用场景**:
-- 产品图批量生成
-- 风格迁移批量处理
-- 概念设计批量创作
-- 图像编辑批量操作
-
-**CSV 模板**:
-- 空白模板: `workflows/nanobana_batch_template_blank.csv`
-- 文生图模板: `workflows/nanobana_batch_template_text2image.csv`
-- 图生图模板: `workflows/nanobana_batch_template_image2image.csv`
-- 中文模板: `workflows/nanobana_batch_template_chinese.csv`
-
-**详细文档**: [NANOBANA_BATCH_GUIDE.md](./NANOBANA_BATCH_GUIDE.md)
-
----
-
-## API 集成
-
-### 服务端点
-- **主 API**: `https://api.kuai.host`
-
-### 认证方式
+**Authentication**: Bearer token in Authorization header
 ```python
-# nodes/Sora2/kuai_utils.py:72-76
-def http_headers_json(api_key: str = "") -> dict:
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = "Bearer " + api_key
-    return headers
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
 ```
 
-### API 端点
+**Common Utilities** (`nodes/Sora2/kuai_utils.py`):
+- `env_or(value, env_name)`: Prioritize parameter over environment variable
+- `to_pil_from_comfy(image_any)`: Convert ComfyUI IMAGE (torch.Tensor/numpy) to PIL.Image
+- `save_image_to_buffer(pil, fmt, quality)`: Save PIL to BytesIO for upload
+- `ensure_list_from_urls(urls_str)`: Parse comma/semicolon/newline separated URLs
+- `http_headers_json(api_key)`: Generate standard JSON headers with auth
 
-#### 1. 创建视频任务
+### Async Task Pattern
+
+Video generation uses **polling-based async** (`*AndWait` nodes):
+```python
+def create_and_wait(self, ...):
+    # 1. Submit task
+    task_id, status, _ = self.create(...)
+
+    # 2. Poll until complete
+    elapsed = 0
+    while elapsed < max_wait_time:
+        if status in ["completed", "failed"]:
+            break
+        time.sleep(poll_interval)
+        task_id, status, video_url, _ = self.query(task_id, ...)
+        elapsed += poll_interval
+
+    # 3. Return or raise error
+    if status != "completed":
+        raise RuntimeError(f"Task failed: {status}")
+    return (task_id, status, video_url, ...)
+```
+
+**Pattern**: Separate `Create` + `Query` nodes for manual control, `CreateAndWait` for convenience.
+
+### Image Processing Pipeline
+
+```
+ComfyUI IMAGE (torch.Tensor/numpy.ndarray, BHWC format, float32 0-1)
+  ↓ to_pil_from_comfy()
+PIL.Image (RGB, uint8)
+  ↓ save_image_to_buffer()
+io.BytesIO (JPEG/PNG/WebP)
+  ↓ HTTP POST multipart/form-data
+Image URL (kuai.host CDN)
+  ↓ Pass to API
+Video/Image generation task
+```
+
+### Node Structure Convention
+
+All nodes follow this pattern:
+```python
+class MyNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "param1": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "param2": ("INT", {"default": 0}),
+            }
+        }
+
+    @classmethod
+    def INPUT_LABELS(cls):
+        """Chinese labels for UI"""
+        return {
+            "param1": "参数1",
+            "param2": "参数2"
+        }
+
+    RETURN_TYPES = ("STRING", "INT")
+    RETURN_NAMES = ("输出1", "输出2")
+    FUNCTION = "execute"
+    CATEGORY = "KuAi/CategoryName"
+
+    def execute(self, param1, param2=0):
+        # Implementation
+        return (result1, result2)
+```
+
+**Important Conventions**:
+- All categories start with `KuAi/`
+- Use Chinese for `RETURN_NAMES` and `INPUT_LABELS`
+- Use emoji prefixes in `NODE_DISPLAY_NAME_MAPPINGS` (🎬 🖼️ 🍌 📦 🔍 ⚡)
+- Raise `RuntimeError` with user-friendly Chinese error messages
+- Log with `print(f"[ComfyUI_KuAi_Power] ...")`
+
+## Key API Endpoints
+
+### Video Generation
 ```
 POST /v1/video/create
-Content-Type: application/json
-Authorization: Bearer {api_key}
-
-# Sora2 请求体
 {
-  "images": ["url1", "url2"],
-  "model": "sora-2",
-  "orientation": "portrait",
-  "prompt": "视频描述",
-  "size": "large",
-  "duration": 10,
-  "watermark": false
+  "model": "sora-2" | "veo3.1",
+  "prompt": "...",
+  "images": ["url1", "url2"],  // optional
+  "duration": 10 | 15 | 25,
+  "orientation": "portrait" | "landscape",
+  "aspect_ratio": "16:9" | "9:16"
 }
+→ {"id": "task_id", "status": "pending"}
 
-# Veo3 请求体
-{
-  "model": "veo3.1",
-  "prompt": "视频描述",
-  "aspect_ratio": "16:9",
-  "enhance_prompt": true,
-  "enable_upsample": true,
-  "images": ["url1", "url2", "url3"]  // 可选
-}
-
-# 响应
-{
-  "id": "task_id",
-  "status": "pending",
-  "status_update_time": 1234567890
-}
+GET /v1/video/query?task_id={id}
+→ {"id": "...", "status": "completed", "video_url": "..."}
 ```
 
-#### 2. 查询任务状态
-```
-GET /v1/video/query?task_id={task_id}
-Authorization: Bearer {api_key}
-
-# 响应
-{
-  "id": "task_id",
-  "status": "completed",  // pending | processing | completed | failed
-  "video_url": "https://...",
-  "status_update_time": 1234567890
-}
-```
-
-#### 3. AI 文本生成
-```
-POST /v1/chat/completions
-Content-Type: application/json
-Authorization: Bearer {api_key}
-
-{
-  "model": "deepseek-v3.2-exp",
-  "messages": [
-    {"role": "system", "content": "系统提示词"},
-    {"role": "user", "content": "用户输入"}
-  ],
-  "temperature": 0.7,
-  "max_tokens": 4000
-}
-```
-
-#### 4. 图片上传
-```
-POST /v1/upload
-Content-Type: multipart/form-data
-Authorization: Bearer {api_key}
-
-file: <binary data>
-
-# 响应
-{
-  "url": "https://..."
-}
-```
-
-#### 5. Nano Banana 图像生成
+### Image Generation (Nano Banana)
 ```
 POST /v1/images/generate
-Content-Type: application/json
-Authorization: Bearer {api_key}
-
 {
-  "model": "gemini-3-pro-image-preview",
-  "prompt": "A futuristic nano banana dish",
-  "aspect_ratio": "1:1",
-  "image_size": "2K",
-  "temperature": 1.0,
-  "use_search": true,
-  "reference_images": ["url1", "url2"]  // 可选
-}
-
-# 响应
-{
-  "image_url": "https://...",
-  "thinking": "思考过程文本",
-  "grounding_sources": "引用来源信息"
-}
-```
-
-#### 6. Nano Banana 多轮对话
-```
-POST /v1/chat/images
-Content-Type: application/json
-Authorization: Bearer {api_key}
-
-{
-  "model": "gemini-3-pro-image-preview",
-  "messages": [
-    {
-      "role": "user",
-      "content": "Create an image of a perfume bottle",
-      "image_url": "https://..."  // 可选
-    },
-    {
-      "role": "assistant",
-      "content": "Image generated",
-      "image_url": "https://..."
-    },
-    {
-      "role": "user",
-      "content": "Make it more elegant"
+  "model": "gemini-3-pro-image-preview" | "gemini-2.5-flash-image",
+  "prompt": "...",
+  "generationConfig": {
+    "seed": 12345,  // INT32, 0 = random
+    "temperature": 1.0,
+    "imageConfig": {
+      "aspectRatio": "1:1",
+      "imageSize": "2K"  // only for gemini-3-pro
     }
-  ],
-  "aspect_ratio": "1:1",
-  "image_size": "2K",
-  "temperature": 1.0
+  },
+  "systemInstruction": "...",  // optional
+  "useSearch": true,  // only for gemini-3-pro
+  "referenceImages": ["url1", "url2"]
 }
+→ {"image_url": "...", "thinking": "...", "grounding_sources": "..."}
 
-# 响应
+POST /v1/chat/images  // Multi-turn chat
 {
-  "image_url": "https://...",
-  "response": "响应文本",
-  "metadata": "元数据信息"
+  "model": "...",
+  "messages": [
+    {"role": "user", "content": "...", "image_url": "..."},
+    {"role": "assistant", "content": "...", "image_url": "..."}
+  ],
+  "generationConfig": {...}
 }
 ```
 
-### 错误处理
+### Utilities
+```
+POST /v1/upload  // Image upload
+Content-Type: multipart/form-data
+→ {"url": "..."}
+
+POST /v1/chat/completions  // AI text generation
+{
+  "model": "deepseek-v3.2-exp",
+  "messages": [{"role": "system", "content": "..."}, ...]
+}
+```
+
+## Complete Node Creation Workflow
+
+When creating new image generation or video generation nodes, follow this comprehensive workflow to ensure proper integration with CSV batch processing and the plugin ecosystem.
+
+### Step 1: Plan the Node
+
+Before coding, determine:
+- **Node purpose**: Image generation, video generation, or utility
+- **API endpoint**: Which kuai.host API will be used
+- **CSV compatibility**: What parameters should be configurable via CSV
+- **Category**: Which category folder (Sora2, Veo3, NanoBanana, Utils, or new category)
+
+### Step 2: Create Node Implementation
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/nodes/CategoryName/node_name.py`
+
+**Template for Image/Video Generation Node**:
 ```python
-# nodes/Sora2/kuai_utils.py
+"""节点名称 - 简短描述"""
+
+import os
+import requests
+from ..Sora2.kuai_utils import env_or, http_headers_json, raise_for_bad_status
+
+class MyGenerationNode:
+    """节点类文档字符串"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "tooltip": "生成提示词"
+                }),
+                "model_name": (["model-1", "model-2"], {
+                    "default": "model-1",
+                    "tooltip": "选择模型"
+                }),
+                "api_key": ("STRING", {
+                    "default": "",
+                    "tooltip": "API密钥（留空使用环境变量 KUAI_API_KEY）"
+                }),
+            },
+            "optional": {
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 2147483647,
+                    "tooltip": "随机种子（0为随机）"
+                }),
+                "system_prompt": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "tooltip": "系统提示词（可选）"
+                }),
+            }
+        }
+
+    @classmethod
+    def INPUT_LABELS(cls):
+        """中文标签"""
+        return {
+            "prompt": "提示词",
+            "model_name": "模型名称",
+            "api_key": "API密钥",
+            "seed": "随机种子",
+            "system_prompt": "系统提示词"
+        }
+
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("图像", "元数据")
+    FUNCTION = "generate"
+    CATEGORY = "KuAi/CategoryName"
+
+    def generate(self, prompt, model_name, api_key="", seed=0, system_prompt=""):
+        """执行生成"""
+        # 1. 解析 API key
+        api_key = env_or(api_key, "KUAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("API Key 未配置，请在节点参数或环境变量中设置")
+
+        # 2. 构建请求
+        api_base = "https://api.kuai.host"
+        headers = http_headers_json(api_key)
+
+        payload = {
+            "model": model_name,
+            "prompt": prompt,
+            "seed": seed if seed > 0 else None,
+        }
+
+        if system_prompt:
+            payload["systemInstruction"] = system_prompt
+
+        # 3. 调用 API
+        try:
+            resp = requests.post(
+                f"{api_base}/v1/images/generate",
+                json=payload,
+                headers=headers,
+                timeout=120
+            )
+            raise_for_bad_status(resp, "图像生成失败")
+
+            result = resp.json()
+            image_url = result.get("image_url")
+
+            # 4. 下载图像并转换为 ComfyUI IMAGE 格式
+            # ... (实现图像下载和转换逻辑)
+
+            return (image_tensor, metadata_json)
+
+        except Exception as e:
+            raise RuntimeError(f"生成失败: {str(e)}")
+```
+
+**CSV Batch Processing Support**:
+For nodes that should support CSV batch processing, ensure all configurable parameters are exposed in `INPUT_TYPES` and can be serialized to/from CSV format.
+
+### Step 3: Register the Node
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/nodes/CategoryName/__init__.py`
+
+```python
+"""CategoryName 节点集合"""
+
+from .node_name import MyGenerationNode
+
+NODE_CLASS_MAPPINGS = {
+    "MyGenerationNode": MyGenerationNode,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "MyGenerationNode": "🎨 My Generation Node",
+}
+```
+
+**Emoji Conventions**:
+- 🎬 Video generation (Sora2)
+- 🚀 Video generation (Veo3)
+- 🍌 Image generation (Nano Banana)
+- 🎨 Image generation (other)
+- 📦 Batch processing
+- 🔍 Query/status
+- ⚡ One-click/convenience
+- 🛠️ Utilities
+- 📝 Script/text generation
+
+### Step 4: Update Frontend Panel (if new category)
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/web/kuaipower_panel.js`
+
+If you created a **new category**, add it to the `categoryNameMap` (line 7-15):
+
+```javascript
+const categoryNameMap = {
+  "ScriptGenerator": "📝 脚本生成",
+  "Sora2": "🎬 Sora2 视频生成",
+  "Veo3": "🚀 Veo3.1 视频生成",
+  "NanoBanana": "🍌 Nano Banana 图像生成",
+  "Utils": "🛠️ 工具节点",
+  "YourNewCategory": "🎨 Your Category Name",  // ADD THIS
+};
+```
+
+**Note**: If using an existing category, no changes needed - the panel auto-discovers nodes.
+
+### Step 5: Create Documentation
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/docs/NODE_NAME_GUIDE.md`
+
+**Documentation Template**:
+```markdown
+# MyGenerationNode 使用指南
+
+## 概述
+简要描述节点的功能和用途。
+
+## 参数说明
+
+### 必需参数
+- **prompt** (提示词): 描述要生成的内容
+- **model_name** (模型名称): 选择使用的模型
+  - `model-1`: 模型1的特点
+  - `model-2`: 模型2的特点
+
+### 可选参数
+- **seed** (随机种子): 0为随机，固定值可复现结果
+- **system_prompt** (系统提示词): 指导AI的整体风格和行为
+
+## 返回值
+- **图像**: 生成的图像（ComfyUI IMAGE格式）
+- **元数据**: JSON格式的生成信息
+
+## 使用示例
+
+### 基础用法
+1. 添加节点到画布
+2. 输入提示词
+3. 选择模型
+4. 执行生成
+
+### CSV批量处理
+支持通过CSV文件批量生成，CSV格式：
+\`\`\`csv
+task_type,prompt,model_name,seed,system_prompt
+generate,描述1,model-1,12345,风格指导
+generate,描述2,model-2,0,
+\`\`\`
+
+## API说明
+- **端点**: `POST /v1/images/generate`
+- **模型**: model-1, model-2
+- **超时**: 120秒
+
+## 常见问题
+1. **生成失败**: 检查API key和网络连接
+2. **结果不理想**: 调整提示词或尝试不同模型
+
+## 更新日志
+- 2025-XX-XX: 初始版本
+```
+
+### Step 6: Create Test File
+
+**Location**: `/workspaces/ComfyUI_KuAi_Power/test/test_node_name.py`
+
+**Test Template**:
+```python
+#!/usr/bin/env python3
+"""测试 MyGenerationNode 节点"""
+
+import sys
+import os
+
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+def test_node_registration():
+    """测试节点注册"""
+    print("=" * 60)
+    print("测试 1: 节点注册")
+    print("=" * 60)
+
+    try:
+        from nodes.CategoryName import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+
+        if 'MyGenerationNode' in NODE_CLASS_MAPPINGS:
+            print("✅ MyGenerationNode 已注册")
+            node_class = NODE_CLASS_MAPPINGS['MyGenerationNode']
+            print(f"   分类: {node_class.CATEGORY}")
+            print(f"   显示名称: {NODE_DISPLAY_NAME_MAPPINGS.get('MyGenerationNode')}")
+
+            # 检查必需方法
+            assert hasattr(node_class, 'INPUT_TYPES'), "缺少 INPUT_TYPES"
+            assert hasattr(node_class, 'RETURN_TYPES'), "缺少 RETURN_TYPES"
+            assert hasattr(node_class, 'FUNCTION'), "缺少 FUNCTION"
+
+            input_types = node_class.INPUT_TYPES()
+            print(f"   必需参数: {list(input_types.get('required', {}).keys())}")
+            print(f"   可选参数: {list(input_types.get('optional', {}).keys())}")
+
+            return True
+        else:
+            print("❌ MyGenerationNode 未注册")
+            return False
+
+    except Exception as e:
+        print(f"❌ 测试失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_node_execution():
+    """测试节点执行（需要API key）"""
+    print("\n" + "=" * 60)
+    print("测试 2: 节点执行")
+    print("=" * 60)
+
+    api_key = os.environ.get("KUAI_API_KEY", "")
+    if not api_key:
+        print("⚠️  跳过执行测试（未设置 KUAI_API_KEY）")
+        print("   设置方法: export KUAI_API_KEY=your_key_here")
+        return True
+
+    try:
+        from nodes.CategoryName import NODE_CLASS_MAPPINGS
+
+        node_class = NODE_CLASS_MAPPINGS['MyGenerationNode']
+        node = node_class()
+
+        # 执行测试
+        print("🔄 执行生成测试...")
+        result = node.generate(
+            prompt="test prompt",
+            model_name="model-1",
+            api_key=api_key,
+            seed=12345
+        )
+
+        print(f"✅ 生成成功")
+        print(f"   返回类型: {type(result)}")
+        print(f"   返回值数量: {len(result)}")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ 执行测试失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_csv_compatibility():
+    """测试CSV批量处理兼容性"""
+    print("\n" + "=" * 60)
+    print("测试 3: CSV批量处理兼容性")
+    print("=" * 60)
+
+    try:
+        from nodes.CategoryName import NODE_CLASS_MAPPINGS
+
+        node_class = NODE_CLASS_MAPPINGS['MyGenerationNode']
+        input_types = node_class.INPUT_TYPES()
+
+        # 检查关键参数
+        required = input_types.get('required', {})
+        optional = input_types.get('optional', {})
+
+        csv_compatible_params = ['prompt', 'model_name', 'seed', 'system_prompt']
+        all_params = {**required, **optional}
+
+        missing = [p for p in csv_compatible_params if p not in all_params]
+
+        if missing:
+            print(f"⚠️  缺少CSV兼容参数: {missing}")
+        else:
+            print("✅ 所有CSV兼容参数都已定义")
+
+        return len(missing) == 0
+
+    except Exception as e:
+        print(f"❌ 测试失败: {e}")
+        return False
+
+if __name__ == "__main__":
+    print("\n🧪 MyGenerationNode 节点测试套件\n")
+
+    results = []
+    results.append(("节点注册", test_node_registration()))
+    results.append(("节点执行", test_node_execution()))
+    results.append(("CSV兼容性", test_csv_compatibility()))
+
+    print("\n" + "=" * 60)
+    print("测试总结")
+    print("=" * 60)
+
+    for name, passed in results:
+        status = "✅ 通过" if passed else "❌ 失败"
+        print(f"{name}: {status}")
+
+    all_passed = all(r[1] for r in results)
+    print("\n" + ("🎉 所有测试通过！" if all_passed else "⚠️  部分测试失败"))
+
+    sys.exit(0 if all_passed else 1)
+```
+
+### Step 7: Run Tests
+
+```bash
+# 1. Test node registration
+python test/test_node_name.py
+
+# 2. Test with actual API (provide API key)
+export KUAI_API_KEY=your_test_key_here
+python test/test_node_name.py
+
+# 3. Run full diagnostics
+python diagnose.py
+```
+
+### Step 8: Verify Integration
+
+1. **Restart ComfyUI** to load the new node
+2. **Check console logs** for `[ComfyUI_KuAi_Power]` messages
+3. **Open quick panel** (Ctrl+Shift+K) and verify node appears in correct category
+4. **Test in UI**:
+   - Add node to canvas
+   - Configure parameters
+   - Execute and verify output
+5. **Test CSV batch processing** (if applicable):
+   - Create test CSV file
+   - Use CSVBatchReader + your batch processor
+   - Verify batch execution
+
+### Step 9: Update Main Documentation
+
+Add node information to:
+- `/workspaces/ComfyUI_KuAi_Power/README.md` - User-facing documentation
+- `/workspaces/ComfyUI_KuAi_Power/CLAUDE.md` - This file (if architectural changes)
+
+### Checklist for New Nodes
+
+Before considering a node complete, verify:
+
+- [ ] Node file created in correct `nodes/CategoryName/` directory
+- [ ] Node class implements all required methods (INPUT_TYPES, RETURN_TYPES, FUNCTION, CATEGORY)
+- [ ] Chinese labels provided via INPUT_LABELS
+- [ ] Node registered in category's `__init__.py`
+- [ ] Display name uses appropriate emoji prefix
+- [ ] Frontend panel updated (if new category)
+- [ ] Documentation created in `docs/`
+- [ ] Test file created in `test/`
+- [ ] Tests pass (registration, execution, CSV compatibility)
+- [ ] Node appears in ComfyUI UI quick panel
+- [ ] Node executes successfully in ComfyUI
+- [ ] CSV batch processing works (if applicable)
+- [ ] Error messages are user-friendly and in Chinese
+- [ ] Logging uses `[ComfyUI_KuAi_Power]` prefix
+
+### Common Patterns for CSV Batch Processing
+
+To make a node CSV-compatible, ensure:
+
+1. **All configurable parameters** are in INPUT_TYPES (not hardcoded)
+2. **Parameter names** match CSV column names
+3. **Default values** are sensible for batch processing
+4. **Optional parameters** have clear defaults
+5. **Image inputs** support file paths (for batch processing)
+
+Example CSV-compatible parameter structure:
+```python
+"required": {
+    "prompt": ("STRING", {"default": ""}),
+    "model_name": (["model-1", "model-2"], {"default": "model-1"}),
+},
+"optional": {
+    "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647}),
+    "system_prompt": ("STRING", {"default": ""}),
+    "image_1": ("IMAGE", {}),  # Optional reference image
+    "output_prefix": ("STRING", {"default": "output"}),
+}
+```
+
+### Testing with User-Provided API Key
+
+When user provides a test API key:
+
+```bash
+# Set API key for testing
+export KUAI_API_KEY=user_provided_key
+
+# Run comprehensive tests
+python test/test_node_name.py
+
+# Test actual generation
+python -c "
+from nodes.CategoryName import NODE_CLASS_MAPPINGS
+node = NODE_CLASS_MAPPINGS['MyGenerationNode']()
+result = node.generate(
+    prompt='test image',
+    model_name='model-1',
+    api_key='$KUAI_API_KEY'
+)
+print('Success:', result)
+"
+```
+
+This workflow ensures consistent, high-quality node development with proper testing, documentation, and integration.
+
+## Important Patterns
+
+### Error Handling
+```python
+# Unified error handling for API responses
 def raise_for_bad_status(resp: requests.Response, context: str = ""):
-    """统一错误处理"""
     if resp.status_code >= 400:
         try:
             err_data = resp.json()
@@ -541,414 +747,59 @@ def raise_for_bad_status(resp: requests.Response, context: str = ""):
         raise RuntimeError(f"{context}: HTTP {resp.status_code} - {msg}")
 ```
 
----
-
-## 工具函数库
-
-### 核心工具 (`nodes/Sora2/kuai_utils.py`)
-
-#### 环境变量处理
+### API Key Resolution
 ```python
-# kuai_utils.py:8-12
-def env_or(value: str, env_name: str) -> str:
-    """优先使用参数，其次使用环境变量"""
-    if value and str(value).strip():
-        return value
-    return os.environ.get(env_name, "").strip()
+# Priority: node parameter > environment variable
+api_key = env_or(api_key_param, "KUAI_API_KEY")
+if not api_key:
+    raise RuntimeError("API Key 未配置")
 ```
 
-#### 图像转换
+### Model-Specific Configuration
 ```python
-# kuai_utils.py:14-44
-def to_pil_from_comfy(image_any, index: int = 0) -> Image.Image:
-    """将 ComfyUI IMAGE 转换为 PIL.Image
-
-    支持:
-    - torch.Tensor (4D/3D)
-    - numpy.ndarray (4D/3D)
-    - PIL.Image
-
-    自动处理:
-    - 数据类型转换 (float32 -> uint8)
-    - 维度调整 (BHWC -> HWC)
-    - 通道扩展 (灰度 -> RGB)
-    """
+# Different models have different capabilities
+if model_name == "gemini-3-pro-image-preview":
+    # Supports imageSize and useSearch
+    config["imageConfig"]["imageSize"] = image_size
+    config["useSearch"] = use_search
+elif model_name == "gemini-2.5-flash-image":
+    # Faster, cheaper, no imageSize/search support
+    pass
 ```
 
-#### 图像保存
-```python
-# kuai_utils.py:46-61
-def save_image_to_buffer(pil: Image.Image, fmt: str, quality: int) -> io.BytesIO:
-    """保存 PIL 到内存缓冲
+### CSV Batch Processing
+The batch processor supports two modes:
+- **Upload mode**: Read from `ComfyUI/input/` directory (dropdown selection)
+- **Path mode**: Direct file path input (cross-platform)
 
-    支持格式:
-    - JPEG: 自动转 RGB，优化压缩
-    - PNG: 优化压缩
-    - WebP: 自动转 RGB，method=6 (最佳压缩)
-    """
-```
+CSV columns: `task_type`, `prompt`, `system_prompt`, `model_name`, `seed`, `aspect_ratio`, `image_size`, `temperature`, `use_search`, `image_1`-`image_6`, `output_prefix`
 
-#### URL 列表处理
-```python
-# kuai_utils.py:63-70
-def ensure_list_from_urls(urls_str: str) -> typing.List[str]:
-    """将分隔的 URL 字符串拆分为列表
+## Frontend Extensions
 
-    支持分隔符: 逗号、分号、换行符
-    自动去除空白和空字符串
-    """
-```
+Located in `web/`:
+- `kuaipower_panel.js`: Quick access panel (Ctrl+Shift+K)
+- `video_preview.js`: Video preview widget
 
----
+## Common Issues
 
-## 前端扩展
+### Nodes Not Showing
+1. Check dependencies: `pip install -r requirements.txt`
+2. Run diagnostics: `python diagnose.py`
+3. Check ComfyUI console for `[ComfyUI_KuAi_Power]` logs
+4. Verify node structure (INPUT_TYPES, RETURN_TYPES, FUNCTION, CATEGORY)
 
-### 快捷面板 (`web/kuaipower_panel.js`)
-**功能**: 提供快速访问节点的面板
-**快捷键**: `Ctrl+Shift+K`
-**特点**:
-- 分类展示所有 KuAi 节点
-- 点击节点名称快速添加到画布
-- 支持拖拽定位
+### API Failures
+1. Verify API key: `echo $KUAI_API_KEY`
+2. Test connectivity: `curl -H "Authorization: Bearer $KUAI_API_KEY" https://api.kuai.host/v1/models`
+3. Check timeout settings in config.py
 
-### 视频预览 (`web/video_preview.js`)
-**功能**: 在 ComfyUI 界面中预览生成的视频
-**支持格式**: MP4, WebM
+### Image Upload Issues
+- Supported formats: JPEG, PNG, WebP
+- Adjust quality parameter (80-90 recommended)
+- Check file size limits
 
----
+## Resources
 
-## 使用场景
-
-### 场景 1: 电商产品视频生成
-```
-工作流:
-LoadImage (产品图)
-  → UploadToImageHost (上传图床)
-  → ProductInfoBuilder (构建产品信息)
-  → SoraPromptFromProduct (AI 生成脚本)
-  → SoraCreateAndWait (生成视频)
-  → 输出视频 URL
-```
-
-**适用产品类型**:
-- 奢侈品/高端产品：强调工艺细节和质感
-- 运动/性能产品：展示动态效果和性能验证
-- 日常/生活方式产品：情境化使用场景
-- 技术/创新产品：问题-解决方案逻辑
-
-### 场景 2: 文本直接生成视频
-```
-工作流:
-VeoText2VideoAndWait (输入提示词)
-  → 自动轮询等待
-  → 输出视频 URL
-```
-
-**适用场景**:
-- 概念验证
-- 创意探索
-- 无参考图的场景生成
-
-### 场景 3: 图片动画化
-```
-工作流:
-LoadImage (静态图)
-  → UploadToImageHost
-  → VeoImage2VideoAndWait (添加运动提示词)
-  → 输出动态视频
-```
-
-**适用场景**:
-- 产品展示动画
-- 场景氛围营造
-- 图片素材二次创作
-
-### 场景 4: AI 图像生成与编辑
-```
-工作流 A: 单次生成
-NanoBananaAIO
-  → 输入提示词和参数
-  → 生成图像 + 思考过程 + 引用来源
-
-工作流 B: 迭代编辑
-NanoBananaMultiTurnChat
-  → 第一轮: "Create a perfume bottle"
-  → 第二轮: "Make it more elegant"
-  → 第三轮: "Add flowers in background"
-  → 每轮基于上一轮结果进行修改
-```
-
-**适用场景**:
-- 概念设计和创意探索
-- 产品视觉设计
-- 基于参考图的风格迁移
-- 需要多次迭代的设计工作
-- 需要引用来源的专业内容创作
-
-### 场景 5: 批量图像生成
-```
-工作流:
-NanoBananaAIO (设置 image_count=5)
-  → 输入提示词
-  → 一次性生成 5 张相似主题的图像
-  → 输出图像批次
-```
-
-**适用场景**:
-- 快速生成多个设计方案
-- A/B 测试素材准备
-- 批量创意探索
-
----
-
-## 技术细节
-
-### 异步任务处理
-所有 `*AndWait` 节点使用轮询机制：
-```python
-# 伪代码
-def create_and_wait(self, ...):
-    # 1. 提交任务
-    task_id, status, _ = self.create(...)
-
-    # 2. 轮询等待
-    elapsed = 0
-    while elapsed < max_wait_time:
-        if status in ["completed", "failed"]:
-            break
-        time.sleep(poll_interval)
-        task_id, status, video_url, _ = self.query(task_id, ...)
-        elapsed += poll_interval
-
-    # 3. 返回结果
-    if status != "completed":
-        raise RuntimeError(f"任务失败或超时: {status}")
-    return (task_id, status, video_url, ...)
-```
-
-### 提示词增强
-Veo3 节点支持自动提示词优化：
-- **中文检测**: 自动识别中文提示词
-- **翻译优化**: 调用 AI 翻译并优化为英文
-- **专业术语**: 添加电影制作术语和技术规范
-- **可控开关**: `enhance_prompt` 参数控制是否启用
-
-### 图像处理流程
-```
-ComfyUI IMAGE (torch.Tensor/numpy.ndarray)
-  ↓ to_pil_from_comfy()
-PIL.Image
-  ↓ save_image_to_buffer()
-io.BytesIO (内存缓冲)
-  ↓ HTTP POST (multipart/form-data)
-图床 URL
-  ↓ 传递给视频生成 API
-视频任务
-```
-
----
-
-## 诊断与调试
-
-### 诊断脚本 (`diagnose.py`)
-**运行方式**:
-```bash
-python diagnose.py
-```
-
-**检查项**:
-1. Python 版本和依赖包
-2. 环境变量配置
-3. API 连接测试
-4. 节点注册状态
-5. 文件权限检查
-
-### 常见问题
-
-#### 1. 节点不显示
-**原因**:
-- 依赖未安装
-- Python 版本不兼容
-- 节点注册失败
-
-**解决**:
-```bash
-cd ComfyUI/custom_nodes/ComfyUI_KuAi_Power
-pip install -r requirements.txt
-python diagnose.py
-# 重启 ComfyUI
-```
-
-#### 2. API 调用失败
-**原因**:
-- API Key 未配置或错误
-- 网络连接问题
-- API 配额耗尽
-
-**解决**:
-```bash
-# 检查环境变量
-echo $KUAI_API_KEY
-
-# 或在 .env 文件中配置
-echo "KUAI_API_KEY=your_key_here" > .env
-
-# 测试 API 连接
-curl -H "Authorization: Bearer $KUAI_API_KEY" \
-     https://api.kuai.host/v1/models
-```
-
-#### 3. 视频生成超时
-**原因**:
-- 服务器负载高
-- 网络不稳定
-- 超时时间设置过短
-
-**解决**:
-- 增加 `max_wait_time` 参数（默认 600 秒）
-- 使用国内镜像 `v.kuai.host`
-- 分开使用 `Create` + `Query` 节点手动控制
-
-#### 4. 图片上传失败
-**原因**:
-- 图片格式不支持
-- 文件过大
-- 网络问题
-
-**解决**:
-- 使用支持的格式（JPEG, PNG, WebP）
-- 调整 `quality` 参数降低文件大小
-- 检查网络连接
-
----
-
-## 开发指南
-
-### 添加新节点
-
-1. **创建节点类**:
-```python
-# nodes/YourCategory/your_node.py
-class YourNode:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "param1": ("STRING", {"default": ""}),
-            }
-        }
-
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("输出",)
-    FUNCTION = "execute"
-    CATEGORY = "KuAi/YourCategory"
-
-    def execute(self, param1):
-        # 实现逻辑
-        return (result,)
-```
-
-2. **注册节点**:
-```python
-# nodes/YourCategory/__init__.py
-from .your_node import YourNode
-
-NODE_CLASS_MAPPINGS = {
-    "YourNode": YourNode,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "YourNode": "你的节点",
-}
-```
-
-3. **重启 ComfyUI** - 自动注册系统会发现新节点
-
-### 最佳实践
-
-1. **错误处理**: 使用 `raise RuntimeError()` 抛出用户友好的错误信息
-2. **参数验证**: 在节点执行前验证所有必需参数
-3. **中文标签**: 使用 `INPUT_LABELS()` 提供中文参数名
-4. **工具提示**: 在 `INPUT_TYPES` 中添加 `tooltip` 说明
-5. **类型安全**: 使用 Pydantic 进行数据验证
-6. **日志输出**: 使用 `print(f"[ComfyUI_KuAi_Power] ...")` 统一日志格式
-
----
-
-## 性能优化
-
-### 图像处理优化
-- **格式选择**: JPEG 适合照片，PNG 适合图形，WebP 平衡质量和大小
-- **质量设置**: 80-90 通常是最佳平衡点
-- **尺寸控制**: 视频生成前自动调整图片尺寸
-
-### API 调用优化
-- **连接复用**: 使用 `requests.Session()` 复用连接
-- **超时设置**: 合理设置 `timeout` 避免长时间阻塞
-- **重试机制**: 对临时性错误自动重试（可通过 `HTTP_RETRY` 配置）
-
-### 轮询优化
-- **动态间隔**: 初期短间隔，后期长间隔
-- **早期退出**: 检测到失败状态立即返回
-- **超时保护**: 设置最大等待时间防止无限等待
-
----
-
-## 许可证
-
-MIT License
-
----
-
-## 相关资源
-
-- **API 服务**: [kuai.host](https://api.kuai.host/register?aff=z2C8)
-
-- **视频教程**: [Bilibili](https://www.bilibili.com/video/BV1umCjBqEpt/)
-
----
-
-## 更新日志
-
-### 最新版本 (2025-12-13)
-
-#### 新增功能
-- ✅ **种子值支持**: NanoBanana 节点支持种子值控制，实现可复现生成（INT32 范围）
-- ✅ **系统提示词**: 两个 NanoBanana 节点支持 `system_prompt` 参数
-- ✅ **模型特定配置**: 自动根据 gemini-3-pro-image-preview 和 gemini-2.5-flash-image 使用正确的 API 参数
-- ✅ **CSV 批量处理**: 新增 CSVBatchReader 和 NanoBananaBatchProcessor 节点
-- ✅ **CSV 文件上传**: CSVBatchReader 支持 upload 和 path 双模式
-- ✅ **批量文生图**: 支持通过 CSV 文件批量生成图像
-- ✅ **批量图生图**: 支持批量编辑图像（最多 6 张参考图）
-- ✅ **CSV 模板**: 提供 4 个预置 CSV 模板（空白、文生图、图生图、中文）
-- ✅ **自动保存**: 批量处理自动保存图像和元数据
-- ✅ **详细报告**: 批量处理提供成功/失败统计和错误详情
-
-#### API 修复
-- ✅ **种子值范围**: 修正为 INT32 (0-2147483647)，符合 Gemini API 要求
-- ✅ **参数命名**: 修正为 camelCase (aspectRatio, imageSize)
-- ✅ **参数结构**: imageConfig 现在正确嵌套在 generationConfig 内部
-- ✅ **分辨率验证**: 通过实际测试验证 1K/2K/4K 分辨率正常工作
-
-#### 文档更新
-- ✅ 新增 [NANOBANA_BATCH_GUIDE.md](./NANOBANA_BATCH_GUIDE.md) - 批量处理详细指南
-- ✅ 新增 [CSV_TEMPLATES_README.md](./workflows/CSV_TEMPLATES_README.md) - CSV 模板使用说明
-- ✅ 新增 [CSV_QUICK_REFERENCE.md](./workflows/CSV_QUICK_REFERENCE.md) - CSV 快速参考
-- ✅ 新增 [CSV_UPLOAD_GUIDE.md](./CSV_UPLOAD_GUIDE.md) - CSV 文件上传指南
-- ✅ 新增 [NANOBANA_API_FIX.md](./NANOBANA_API_FIX.md) - API 参数修复报告
-- ✅ 更新 README.md - 添加批量处理功能介绍和模板下载链接
-
-### 历史版本
-- ✅ 支持 Veo3.1 模型
-- ✅ 新增 Nano Banana 图像生成节点
-- ✅ 支持多轮对话式图像编辑
-- ✅ 新增 AI 脚本生成功能
-- ✅ 优化提示词自动翻译
-- ✅ 添加快捷面板 (Ctrl+Shift+K)
-- ✅ 完善错误处理和诊断工具
-- ✅ 统一 API 端点配置（默认 https://api.kuai.host）
-
----
-
-**文档生成时间**: 2025-12-13
-**适用版本**: ComfyUI_KuAi_Power (当前版本)
+- **API Service**: https://api.kuai.host/register?aff=z2C8
+- **Video Tutorial**: https://www.bilibili.com/video/BV1umCjBqEpt/
+- **Detailed Docs**: See README.md and docs/ directory
