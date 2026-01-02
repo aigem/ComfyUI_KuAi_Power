@@ -13,7 +13,7 @@ class SoraCreateVideo:
             "required": {
                 "images": ("STRING", {"default": "", "multiline": False, "tooltip": "图片URL列表，逗号分隔"}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "视频提示词"}),
-                "model": (["sora-2", "sora-2-pro"], {"default": "sora-2", "tooltip": "模型选择"}),
+                "model": (["sora-2-all", "sora-2-pro-all"], {"default": "sora-2-all", "tooltip": "模型选择"}),
                 "duration_sora2": (["10", "15"], {"default": "10", "tooltip": "sora-2时长(秒)"}),
                 "duration_sora2pro": (["15", "25"], {"default": "15", "tooltip": "sora-2-pro时长(秒)"}),
             },
@@ -48,7 +48,7 @@ class SoraCreateVideo:
             "timeout": "超时",
         }
 
-    def create(self, images, prompt, model="sora-2", duration_sora2="10", duration_sora2pro="15",
+    def create(self, images, prompt, model="sora-2-all", duration_sora2="10", duration_sora2pro="15",
                api_base="https://api.kuai.host", api_key="", orientation="portrait", size="large", watermark=False, timeout=120):
         api_key = env_or(api_key, "KUAI_API_KEY")
         endpoint = api_base.rstrip("/") + "/v1/video/create"
@@ -58,7 +58,7 @@ class SoraCreateVideo:
             raise RuntimeError("请至少提供一个图片 URL")
         
         # 根据模型选择时长
-        duration = int(duration_sora2) if model == "sora-2" else int(duration_sora2pro)
+        duration = int(duration_sora2) if model == "sora-2-all" else int(duration_sora2pro)
         
         payload = {
             "images": images_list,
@@ -168,7 +168,7 @@ class SoraCreateAndWait:
             "required": {
                 "images": ("STRING", {"default": "", "multiline": False, "tooltip": "图片URL列表，逗号分隔"}),
                 "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "视频提示词"}),
-                "model": (["sora-2", "sora-2-pro"], {"default": "sora-2", "tooltip": "模型选择"}),
+                "model": (["sora-2-all", "sora-2-pro-all"], {"default": "sora-2-all", "tooltip": "模型选择"}),
                 "duration_sora2": (["10", "15"], {"default": "10", "tooltip": "sora-2时长(秒)"}),
                 "duration_sora2pro": (["15", "25"], {"default": "15", "tooltip": "sora-2-pro时长(秒)"}),
             },
@@ -233,7 +233,7 @@ class SoraText2Video:
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True, "tooltip": "视频提示词"}),
-                "model": (["sora-2", "sora-2-pro"], {"default": "sora-2", "tooltip": "模型选择"}),
+                "model": (["sora-2-all", "sora-2-pro-all"], {"default": "sora-2-all", "tooltip": "模型选择"}),
                 "duration_sora2": (["10", "15"], {"default": "10", "tooltip": "sora-2时长(秒)"}),
                 "duration_sora2pro": (["15", "25"], {"default": "15", "tooltip": "sora-2-pro时长(秒)"}),
             },
