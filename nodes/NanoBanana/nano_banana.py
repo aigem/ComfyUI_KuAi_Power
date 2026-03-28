@@ -40,7 +40,7 @@ class NanoBananaAIO:
 
     @classmethod
     def INPUT_TYPES(cls):
-        model_list = ["gemini-3-pro-image-preview", "gemini-2.5-flash-image"]
+        model_list = ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"]
         return {
             "required": {
                 "model_name": (model_list, {"default": model_list[0], "tooltip": "选择 Gemini 模型"}),
@@ -59,7 +59,7 @@ class NanoBananaAIO:
                 "image_6": ("IMAGE", {"tooltip": "参考图6"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
-                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对gemini-3-pro-image-preview起作用"}),
+                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸，对 gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview 有效"}),
                 "temperature": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "生成温度"}),
                 "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API 端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API 密钥"}),
@@ -181,8 +181,7 @@ class NanoBananaAIO:
         }
 
         # 根据模型类型添加不同的配置
-        if model_name == "gemini-3-pro-image-preview":
-            # gemini-3-pro-image-preview: imageConfig 是 generationConfig 的子对象
+        if model_name in ("gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"):
             generation_config["imageConfig"] = {
                 "aspectRatio": aspect_ratio,
                 "imageSize": image_size
@@ -205,8 +204,8 @@ class NanoBananaAIO:
                 "parts": [{"text": system_prompt.strip()}]
             }
 
-        # 如果启用搜索，添加 tools（仅 gemini-3-pro-image-preview 支持）
-        if use_search and model_name == "gemini-3-pro-image-preview":
+        # 如果启用搜索，添加 tools（gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview 支持）
+        if use_search and model_name in ("gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"):
             payload["tools"] = [{"googleSearch": {}}]
 
         try:
@@ -341,16 +340,17 @@ class NanoBananaMultiTurnChat:
 
     @classmethod
     def INPUT_TYPES(cls):
-        model_list = ["gemini-3-pro-image-preview", "gemini-2.5-flash-image"]
+        model_list = ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"]
         return {
             "required": {
                 "model_name": (model_list, {"default": model_list[0], "tooltip": "选择 Gemini 模型"}),
                 "prompt": ("STRING", {"multiline": True, "default": "Create an image of a clear perfume bottle sitting on a vanity.", "tooltip": "对话提示词"}),
                 "reset_chat": ("BOOLEAN", {"default": False, "tooltip": "重置对话历史"}),
+                "use_search": ("BOOLEAN", {"default": True, "tooltip": "启用网络搜索增强（仅 gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview 支持）"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647, "tooltip": "随机种子值，0为随机（INT32范围）"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
-                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸,只对gemini-3-pro-image-preview起作用"}),
+                "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸，对 gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview 有效"}),
                 "temperature": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "tooltip": "生成温度"}),
             },
             "optional": {
@@ -373,6 +373,7 @@ class NanoBananaMultiTurnChat:
             "model_name": "模型",
             "prompt": "提示词",
             "reset_chat": "重置对话",
+            "use_search": "启用搜索",
             "seed": "种子值",
             "aspect_ratio": "宽高比",
             "image_size": "尺寸",
@@ -389,7 +390,7 @@ class NanoBananaMultiTurnChat:
         print(f"\033[91m[NanoBanana] 错误: {message}\033[0m")
         return (torch.zeros(1, 64, 64, 3), "", "", "")
 
-    def generate_multiturn_image(self, model_name, prompt, reset_chat=False, seed=0,
+    def generate_multiturn_image(self, model_name, prompt, reset_chat=False, use_search=True, seed=0,
                                 aspect_ratio="1:1", image_size="2K", temperature=1.0,
                                 system_prompt="", image_input=None, api_base="https://api.kuai.host",
                                 api_key="", timeout=120):
@@ -476,8 +477,7 @@ class NanoBananaMultiTurnChat:
             }
 
             # 根据模型类型添加不同的配置
-            if model_name == "gemini-3-pro-image-preview":
-                # gemini-3-pro-image-preview: imageConfig 是 generationConfig 的子对象
+            if model_name in ("gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"):
                 generation_config["imageConfig"] = {
                     "aspectRatio": aspect_ratio,
                     "imageSize": image_size
@@ -498,6 +498,10 @@ class NanoBananaMultiTurnChat:
                 payload["systemInstruction"] = {
                     "parts": [{"text": system_prompt.strip()}]
                 }
+
+            # 如果启用搜索，添加 tools（gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview 支持）
+            if use_search and model_name in ("gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"):
+                payload["tools"] = [{"googleSearch": {}}]
 
             try:
                 resp = requests.post(

@@ -69,7 +69,8 @@
 task_type,prompt,model_name,seed,aspect_ratio
 generate,A futuristic city at sunset,gemini-3-pro-image-preview,42,16:9
 generate,A cute cat playing with yarn,gemini-2.5-flash-image,0,1:1
-generate,Mountain landscape with lake,gemini-3-pro-image-preview,123,9:16
+generate,Mountain landscape with lake,gemini-3.1-flash-image-preview,123,9:16
+generate,Abstract neon art on dark background,gemini-3.1-flash-image-preview,0,1:1
 ```
 
 ### 批量图像编辑
