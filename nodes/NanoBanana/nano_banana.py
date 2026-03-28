@@ -10,7 +10,7 @@ import numpy as np
 import requests
 from PIL import Image
 
-from ..Sora2.kuai_utils import (
+from ...utils.kuai_utils import (
     env_or,
     to_pil_from_comfy,
     http_headers_json,

@@ -1,6 +1,6 @@
 import json
 import requests
-from .kuai_utils import env_or, http_headers_json, raise_for_bad_status
+from ...utils.kuai_utils import env_or, http_headers_json, raise_for_bad_status
 
 # 默认系统提示词（使用 $ 语法）
 DEFAULT_SYSTEM_PROMPT = """# 身份认定

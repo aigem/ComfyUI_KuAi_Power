@@ -97,10 +97,10 @@
 | 列名 | 说明 | 默认值 | 可选值 |
 |------|------|--------|--------|
 | `system_prompt` | 系统提示词 | 空 | 任意文本 |
-| `model_name` | 模型名称 | `gemini-3-pro-image-preview` | `gemini-3-pro-image-preview`, `gemini-2.5-flash-image` |
+| `model_name` | 模型名称 | `gemini-3-pro-image-preview` | `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `gemini-2.5-flash-image` |
 | `seed` | 随机种子 | `0` (随机) | 0 - 18446744073709551615 |
 | `aspect_ratio` | 宽高比 | `1:1` | `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9` |
-| `image_size` | 图像尺寸 | `2K` | `1K`, `2K`, `4K` (仅 gemini-3-pro-image-preview) |
+| `image_size` | 图像尺寸 | `2K` | `1K`, `2K`, `4K` (仅 gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview) |
 | `temperature` | 生成温度 | `1.0` | 0.0 - 2.0 |
 | `use_search` | 启用搜索 | `true` | `true`, `false` |
 | `image_1` ~ `image_6` | 参考图路径 | 空 | 本地图片路径 |
@@ -171,7 +171,7 @@ edit,Make it more colorful,Enhance colors,gemini-2.5-flash-image,100,1:1,/home/u
 
 ### 3. 模型选择
 
-**gemini-3-pro-image-preview**:
+**gemini-3-pro-image-preview / gemini-3.1-flash-image-preview**:
 - ✅ 支持 Google 搜索增强
 - ✅ 支持 image_size 参数 (1K/2K/4K)
 - ✅ 更强的理解能力

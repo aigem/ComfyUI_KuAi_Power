@@ -3,7 +3,7 @@
 import json
 import os
 import time
-from .kuai_utils import env_or
+from ...utils.kuai_utils import env_or
 from .sora2 import SoraCreateVideo, SoraText2Video, SoraQueryTask
 
 

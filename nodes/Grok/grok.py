@@ -3,7 +3,7 @@
 import os
 import time
 import requests
-from ..Sora2.kuai_utils import env_or, http_headers_json, raise_for_bad_status, ensure_list_from_urls
+from ...utils.kuai_utils import env_or, http_headers_json, raise_for_bad_status, ensure_list_from_urls
 
 
 class GrokCreateVideo:
@@ -37,6 +37,10 @@ class GrokCreateVideo:
                     "multiline": True,
                     "tooltip": "参考图片URL（多个用逗号、分号或换行分隔）"
                 }),
+                "api_base": ("STRING", {
+                    "default": "https://api.kuai.host",
+                    "tooltip": "API 端点地址"
+                }),
             }
         }
 
@@ -47,7 +51,8 @@ class GrokCreateVideo:
             "aspect_ratio": "宽高比",
             "size": "分辨率",
             "api_key": "API密钥",
-            "image_urls": "参考图片URL"
+            "image_urls": "参考图片URL",
+            "api_base": "API地址"
         }
 
     RETURN_TYPES = ("STRING", "STRING", "STRING")
@@ -55,13 +60,13 @@ class GrokCreateVideo:
     FUNCTION = "create"
     CATEGORY = "KuAi/Grok"
 
-    def create(self, prompt, aspect_ratio, size, api_key="", image_urls=""):
+    def create(self, prompt, aspect_ratio, size, api_key="", image_urls="",
+               api_base="https://api.kuai.host"):
         """创建 Grok 视频生成任务"""
         api_key = env_or(api_key, "KUAI_API_KEY")
         if not api_key:
             raise RuntimeError("API Key 未配置，请在节点参数或环境变量中设置 KUAI_API_KEY")
 
-        api_base = "https://api.kuai.host"
         headers = http_headers_json(api_key)
 
         # 解析图片URL列表
@@ -79,7 +84,7 @@ class GrokCreateVideo:
 
         try:
             resp = requests.post(
-                f"{api_base}/v1/video/create",
+                f"{api_base.rstrip('/')}/v1/video/create",
                 json=payload,
                 headers=headers,
                 timeout=30
@@ -114,6 +119,12 @@ class GrokQueryVideo:
                     "default": "",
                     "tooltip": "API密钥（留空使用环境变量 KUAI_API_KEY）"
                 }),
+            },
+            "optional": {
+                "api_base": ("STRING", {
+                    "default": "https://api.kuai.host",
+                    "tooltip": "API 端点地址"
+                }),
             }
         }
 
@@ -121,7 +132,8 @@ class GrokQueryVideo:
     def INPUT_LABELS(cls):
         return {
             "task_id": "任务ID",
-            "api_key": "API密钥"
+            "api_key": "API密钥",
+            "api_base": "API地址"
         }
 
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
@@ -129,7 +141,7 @@ class GrokQueryVideo:
     FUNCTION = "query"
     CATEGORY = "KuAi/Grok"
 
-    def query(self, task_id, api_key=""):
+    def query(self, task_id, api_key="", api_base="https://api.kuai.host"):
         """查询 Grok 视频生成任务状态"""
         api_key = env_or(api_key, "KUAI_API_KEY")
         if not api_key:
@@ -138,14 +150,13 @@ class GrokQueryVideo:
         if not task_id:
             raise RuntimeError("任务ID不能为空")
 
-        api_base = "https://api.kuai.host"
         headers = http_headers_json(api_key)
 
         print(f"[ComfyUI_KuAi_Power] Grok 查询任务: {task_id}")
 
         try:
             resp = requests.get(
-                f"{api_base}/v1/video/query",
+                f"{api_base.rstrip('/')}/v1/video/query",
                 params={"id": task_id},
                 headers=headers,
                 timeout=30
@@ -198,6 +209,10 @@ class GrokCreateAndWait:
                     "multiline": True,
                     "tooltip": "参考图片URL（多个用逗号、分号或换行分隔）"
                 }),
+                "api_base": ("STRING", {
+                    "default": "https://api.kuai.host",
+                    "tooltip": "API 端点地址"
+                }),
                 "max_wait_time": ("INT", {
                     "default": 600,
                     "min": 60,
@@ -221,6 +236,7 @@ class GrokCreateAndWait:
             "size": "分辨率",
             "api_key": "API密钥",
             "image_urls": "参考图片URL",
+            "api_base": "API地址",
             "max_wait_time": "最大等待时间",
             "poll_interval": "轮询间隔"
         }
@@ -231,18 +247,19 @@ class GrokCreateAndWait:
     CATEGORY = "KuAi/Grok"
 
     def create_and_wait(self, prompt, aspect_ratio, size, api_key="",
-                       image_urls="", max_wait_time=600, poll_interval=10):
+                       image_urls="", api_base="https://api.kuai.host",
+                       max_wait_time=600, poll_interval=10):
         """创建 Grok 视频并等待完成"""
         # 创建任务
         creator = GrokCreateVideo()
         task_id, status, enhanced_prompt = creator.create(
-            prompt, aspect_ratio, size, api_key, image_urls
+            prompt, aspect_ratio, size, api_key, image_urls, api_base
         )
 
         # 如果已经完成，直接返回
         if status in ["completed", "failed"]:
             querier = GrokQueryVideo()
-            return querier.query(task_id, api_key)
+            return querier.query(task_id, api_key, api_base)
 
         # 轮询等待完成
         print(f"[ComfyUI_KuAi_Power] Grok 等待视频生成完成，最多等待 {max_wait_time} 秒...")
@@ -255,7 +272,7 @@ class GrokCreateAndWait:
             elapsed += poll_interval
 
             try:
-                task_id, status, video_url, enhanced_prompt = querier.query(task_id, api_key)
+                task_id, status, video_url, enhanced_prompt = querier.query(task_id, api_key, api_base)
 
                 if status == "completed":
                     print(f"[ComfyUI_KuAi_Power] Grok 视频生成完成！")
@@ -267,7 +284,6 @@ class GrokCreateAndWait:
 
             except Exception as e:
                 print(f"[ComfyUI_KuAi_Power] Grok 查询出错: {str(e)}")
-                # 继续等待，不立即失败
 
         # 超时
         raise RuntimeError(

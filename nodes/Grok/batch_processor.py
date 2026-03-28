@@ -3,7 +3,7 @@
 import json
 import os
 import time
-from ..Sora2.kuai_utils import env_or
+from ...utils.kuai_utils import env_or
 from .grok import GrokCreateVideo, GrokQueryVideo
 
 

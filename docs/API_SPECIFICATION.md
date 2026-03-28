@@ -46,7 +46,7 @@ Content-Type: application/json
 
 | 参数 | 类型 | 必需 | 说明 |
 |------|------|------|------|
-| `model` | string | 是 | 模型名称，可选值: `gemini-3-pro-image-preview`, `gemini-2.0-flash-exp` |
+| `model` | string | 是 | 模型名称，可选值: `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `gemini-2.5-flash-image` |
 | `prompt` | string | 是 | 图像生成提示词 |
 | `aspect_ratio` | string | 是 | 宽高比，可选值: `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9` |
 | `image_size` | string | 是 | 图像尺寸，可选值: `1K`, `2K`, `4K` |

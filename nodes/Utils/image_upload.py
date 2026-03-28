@@ -1,25 +1,7 @@
 import json
 import requests
-import sys
-from pathlib import Path
 
-# 添加父目录到路径以导入 utils
-parent_dir = Path(__file__).parent.parent / "Sora2"
-if str(parent_dir) not in sys.path:
-    sys.path.insert(0, str(parent_dir))
-
-try:
-    from kuai_utils import to_pil_from_comfy, save_image_to_buffer, http_headers_multipart, raise_for_bad_status
-except ImportError:
-    import importlib.util
-    utils_path = parent_dir / "kuai_utils.py"
-    spec = importlib.util.spec_from_file_location("kuai_utils", utils_path)
-    utils = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(utils)
-    to_pil_from_comfy = utils.to_pil_from_comfy
-    save_image_to_buffer = utils.save_image_to_buffer
-    http_headers_multipart = utils.http_headers_multipart
-    raise_for_bad_status = utils.raise_for_bad_status
+from ...utils.kuai_utils import to_pil_from_comfy, save_image_to_buffer, http_headers_multipart, raise_for_bad_status
 
 class UploadToImageHost:
     """上传图片到临时图床"""

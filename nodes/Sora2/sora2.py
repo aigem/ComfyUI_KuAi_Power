@@ -1,8 +1,8 @@
 import json
 import time
 import requests
-from .kuai_utils import (env_or, ensure_list_from_urls,
-                         http_headers_json, raise_for_bad_status, json_get)
+from ...utils.kuai_utils import (env_or, ensure_list_from_urls,
+                                http_headers_json, raise_for_bad_status, json_get)
 
 
 class SoraCreateVideo:

@@ -47,7 +47,7 @@ class NanoBananaMultiTurnChat:
 ### 2. 配置参数
 
 **必需参数**:
-- `model_name`: 选择模型（默认 `gemini-3-pro-image-preview`）
+- `model_name`: 选择模型（`gemini-3-pro-image-preview`、`gemini-3.1-flash-image-preview`、`gemini-2.5-flash-image`）
 - `prompt`: 输入提示词
 - `reset_chat`: 是否重置对话（默认 `False`）
 - `aspect_ratio`: 图像宽高比（默认 `1:1`）

@@ -7,7 +7,7 @@ import torch
 import numpy as np
 from PIL import Image
 
-from ..Sora2.kuai_utils import env_or
+from ...utils.kuai_utils import env_or
 from .nano_banana import NanoBananaAIO, pil_to_base64, to_pil_from_comfy
 
 

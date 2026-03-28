@@ -22,7 +22,7 @@ task_type,prompt,system_prompt,model_name,seed,aspect_ratio,image_size,temperatu
 | 列名 | 默认值 | 可选值 |
 |------|--------|--------|
 | `system_prompt` | 空 | 任意文本 |
-| `model_name` | `gemini-3-pro-image-preview` | `gemini-2.5-flash-image` |
+| `model_name` | `gemini-3-pro-image-preview` | `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `gemini-2.5-flash-image` |
 | `seed` | `0` | 0 - 18446744073709551615 |
 | `aspect_ratio` | `1:1` | `1:1`, `16:9`, `9:16`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `21:9` |
 | `image_size` | `2K` | `1K`, `2K`, `4K` |

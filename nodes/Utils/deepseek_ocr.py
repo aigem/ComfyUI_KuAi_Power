@@ -1,24 +1,7 @@
 import json
 import requests
-import sys
-from pathlib import Path
 
-# 添加父目录到路径以导入 utils
-parent_dir = Path(__file__).parent.parent / "Sora2"
-if str(parent_dir) not in sys.path:
-    sys.path.insert(0, str(parent_dir))
-
-try:
-    from kuai_utils import env_or, http_headers_json, raise_for_bad_status
-except ImportError:
-    import importlib.util
-    utils_path = parent_dir / "kuai_utils.py"
-    spec = importlib.util.spec_from_file_location("kuai_utils", utils_path)
-    utils = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(utils)
-    env_or = utils.env_or
-    http_headers_json = utils.http_headers_json
-    raise_for_bad_status = utils.raise_for_bad_status
+from ...utils.kuai_utils import env_or, http_headers_json, raise_for_bad_status
 
 class DeepseekOCRToPrompt:
     """Deepseek OCR 提取"""
@@ -76,12 +59,9 @@ class DeepseekOCRToPrompt:
             raise RuntimeError(f"OCR 调用失败: {str(e)}")
 
         content = ""
-        try:
-            choices = data.get("choices", [])
-            if choices:
-                content = (choices[0].get("message") or {}).get("content") or ""
-        except Exception:
-            pass
+        choices = data.get("choices", [])
+        if choices:
+            content = (choices[0].get("message") or {}).get("content") or ""
 
         if not content:
             content = json.dumps(data, ensure_ascii=False)

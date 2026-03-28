@@ -1,8 +1,8 @@
 import json
 import time
 import requests
-from ..Sora2.kuai_utils import (env_or, ensure_list_from_urls,
-                           http_headers_json, raise_for_bad_status, json_get)
+from ...utils.kuai_utils import (env_or, ensure_list_from_urls,
+                                http_headers_json, raise_for_bad_status, json_get)
 
 
 class VeoText2Video:
@@ -18,7 +18,7 @@ class VeoText2Video:
                 "enable_upsample": ("BOOLEAN", {"default": True, "tooltip": "启用超分以提升视频质量"}),
             },
             "optional": {
-                "api_base": ("STRING", {"default": "http://api.kuai.host", "tooltip": "API端点地址"}),
+                "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API密钥"}),
                 "timeout": ("INT", {"default": 120, "min": 5, "max": 600, "tooltip": "超时时间(秒)"}),
             }
@@ -30,7 +30,7 @@ class VeoText2Video:
     CATEGORY = "KuAi/Veo3"
     
     def create(self, prompt, model, aspect_ratio, enhance_prompt, enable_upsample,
-               api_base="http://api.kuai.host", api_key="", timeout=120):
+               api_base="https://api.kuai.host", api_key="", timeout=120):
         
         api_key = env_or(api_key, "KUAI_API_KEY")
         endpoint = api_base.rstrip("/") + "/v1/video/create"
@@ -75,7 +75,7 @@ class VeoImage2Video:
                 "image_1": ("STRING", {"default": "", "multiline": False, "tooltip": "参考图1 URL (首帧)"}),
                 "image_2": ("STRING", {"default": "", "multiline": False, "tooltip": "参考图2 URL (尾帧)"}),
                 "image_3": ("STRING", {"default": "", "multiline": False, "tooltip": "参考图3 URL (元素)"}),
-                "api_base": ("STRING", {"default": "http://api.kuai.host", "tooltip": "API端点地址"}),
+                "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API密钥"}),
                 "timeout": ("INT", {"default": 120, "min": 5, "max": 600, "tooltip": "超时时间(秒)"}),
             }
@@ -88,7 +88,7 @@ class VeoImage2Video:
 
     def create(self, prompt, model, aspect_ratio, enhance_prompt, enable_upsample,
                image_1="", image_2="", image_3="",
-               api_base="http://api.kuai.host", api_key="", timeout=120):
+               api_base="https://api.kuai.host", api_key="", timeout=120):
         
         api_key = env_or(api_key, "KUAI_API_KEY")
         endpoint = api_base.rstrip("/") + "/v1/video/create"
@@ -136,7 +136,7 @@ class VeoQueryTask:
                 "task_id": ("STRING", {"default": "", "tooltip": "任务ID"}),
             },
             "optional": {
-                "api_base": ("STRING", {"default": "http://api.kuai.host", "tooltip": "API端点地址"}),
+                "api_base": ("STRING", {"default": "https://api.kuai.host", "tooltip": "API端点地址"}),
                 "api_key": ("STRING", {"default": "", "tooltip": "API密钥"}),
                 "wait": ("BOOLEAN", {"default": True, "tooltip": "是否等待任务完成"}),
                 "poll_interval_sec": ("INT", {"default": 15, "min": 5, "max": 90, "tooltip": "轮询间隔(秒)"}),
@@ -149,7 +149,7 @@ class VeoQueryTask:
     FUNCTION = "query"
     CATEGORY = "KuAi/Veo3"
 
-    def query(self, task_id, api_base="http://api.kuai.host", api_key="", wait=True, poll_interval_sec=5, timeout_sec=600):
+    def query(self, task_id, api_base="https://api.kuai.host", api_key="", wait=True, poll_interval_sec=5, timeout_sec=600):
         api_key = env_or(api_key, "KUAI_API_KEY")
         endpoint = api_base.rstrip("/") + "/v1/video/query"
 
@@ -213,7 +213,7 @@ class VeoText2VideoAndWait:
         creator = VeoText2Video()
         task_id, _, _ = creator.create(**creator_kwargs)
         
-        querier_kwargs["api_base"] = creator_kwargs.get("api_base", "http://api.kuai.host")
+        querier_kwargs["api_base"] = creator_kwargs.get("api_base", "https://api.kuai.host")
         querier_kwargs["api_key"] = creator_kwargs.get("api_key", "")
 
         querier = VeoQueryTask()
@@ -255,7 +255,7 @@ class VeoImage2VideoAndWait:
         creator = VeoImage2Video()
         task_id, _, _ = creator.create(**creator_kwargs)
 
-        querier_kwargs["api_base"] = creator_kwargs.get("api_base", "http://api.kuai.host")
+        querier_kwargs["api_base"] = creator_kwargs.get("api_base", "https://api.kuai.host")
         querier_kwargs["api_key"] = creator_kwargs.get("api_key", "")
 
         querier = VeoQueryTask()
