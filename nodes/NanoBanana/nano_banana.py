@@ -57,6 +57,14 @@ class NanoBananaAIO:
                 "image_4": ("IMAGE", {"tooltip": "参考图4"}),
                 "image_5": ("IMAGE", {"tooltip": "参考图5"}),
                 "image_6": ("IMAGE", {"tooltip": "参考图6"}),
+                "image_7": ("IMAGE", {"tooltip": "参考图7"}),
+                "image_8": ("IMAGE", {"tooltip": "参考图8"}),
+                "image_9": ("IMAGE", {"tooltip": "参考图9"}),
+                "image_10": ("IMAGE", {"tooltip": "参考图10"}),
+                "image_11": ("IMAGE", {"tooltip": "参考图11"}),
+                "image_12": ("IMAGE", {"tooltip": "参考图12"}),
+                "image_13": ("IMAGE", {"tooltip": "参考图13"}),
+                "image_14": ("IMAGE", {"tooltip": "参考图14"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
                                 {"default": "1:1", "tooltip": "图像宽高比"}),
                 "image_size": (["1K", "2K", "4K"], {"default": "2K", "tooltip": "图像尺寸，对 gemini-3-pro-image-preview 和 gemini-3.1-flash-image-preview 有效"}),
@@ -87,6 +95,14 @@ class NanoBananaAIO:
             "image_4": "参考图4",
             "image_5": "参考图5",
             "image_6": "参考图6",
+            "image_7": "参考图7",
+            "image_8": "参考图8",
+            "image_9": "参考图9",
+            "image_10": "参考图10",
+            "image_11": "参考图11",
+            "image_12": "参考图12",
+            "image_13": "参考图13",
+            "image_14": "参考图14",
             "aspect_ratio": "宽高比",
             "image_size": "尺寸",
             "temperature": "温度",
@@ -101,7 +117,7 @@ class NanoBananaAIO:
         return (torch.zeros(1, 64, 64, 3), "", "")
 
     def generate_unified(self, model_name, prompt, image_count=1, use_search=True, seed=0,
-                        system_prompt="", image_1=None, image_2=None, image_3=None, image_4=None, image_5=None, image_6=None,
+                        system_prompt="", image_1=None, image_2=None, image_3=None, image_4=None, image_5=None, image_6=None, image_7=None, image_8=None, image_9=None, image_10=None, image_11=None, image_12=None, image_13=None, image_14=None,
                         aspect_ratio="1:1", image_size="2K", temperature=1.0,
                         api_base="https://api.kuai.host", api_key="", timeout=120):
         """统一生成接口"""
@@ -128,7 +144,7 @@ class NanoBananaAIO:
 
             # 准备参考图像（转换为 base64）
             reference_images_base64 = []
-            for img_tensor in [image_1, image_2, image_3, image_4, image_5, image_6]:
+            for img_tensor in [image_1, image_2, image_3, image_4, image_5, image_6, image_7, image_8, image_9, image_10, image_11, image_12, image_13, image_14]:
                 if img_tensor is not None:
                     try:
                         pil_img = to_pil_from_comfy(img_tensor)

@@ -136,7 +136,7 @@ class NanoBananaBatchProcessor:
         # 处理参考图像（改图模式）
         reference_images = []
         if is_edit:
-            for i in range(1, 7):  # 最多6张参考图
+            for i in range(1, 15):  # 最多14张参考图
                 img_path = task.get(f"image_{i}", "").strip()
                 if img_path:
                     # 加载本地图片
